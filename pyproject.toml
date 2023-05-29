@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ditto"
-version = "0.2.3"
+version = "0.2.3a0"
 description = "Distribution Feeder Conversion Tool"
 license = "BSD license"
 keywords = ["ditto"]

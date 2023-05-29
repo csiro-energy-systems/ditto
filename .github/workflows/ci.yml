@@ -32,7 +32,9 @@ jobs:
         virtualenvs-in-project: true
 
     - name: Install dependencies
-      run: poetry install --all-extras
+      run: |
+        poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
+        poetry install --all-extras
 
     - name: run pytests & coverage report
       run: poetry run pytest -vvv --cov=./ --cov-report=xml:unit.coverage.xml
