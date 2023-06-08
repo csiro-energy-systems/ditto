@@ -18,7 +18,7 @@ def test_opendss_to_gridlabd_cli():
 
     run_command(
         shlex.split(
-            """ ditto-cli convert --from="opendss" --to="gridlabd" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
+            """ poetry run ditto-cli convert --from="opendss" --to="gridlabd" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
                 output_path.name
             ).strip(),
         )
@@ -77,7 +77,7 @@ def test_metric_computation_cli():
     )
 
 
-def run_command(args: list[str], ignore_errors: bool = False, print_output: bool = True, verbose=0, **kwargs) -> str:
+def run_command(args: list, ignore_errors: bool = False, print_output: bool = True, verbose=0, **kwargs) -> str:
     """ Run a command and print the output after it is finished.
     :param args: list of arguments to pass to the command
     :param ignore_errors: if True, ignore errors and just return the output, if True, raise a RuntimeError containing stdout+stderr if the command fails.
