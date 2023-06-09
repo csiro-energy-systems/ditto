@@ -1,3 +1,4 @@
+import io
 import subprocess
 import shlex
 import six
@@ -11,19 +12,18 @@ else:
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 
-
 def test_opendss_to_gridlabd_cli():
 
     output_path = tempfile.TemporaryDirectory()
-    print(output_path.name)
-    p = subprocess.Popen(
+
+    run_command(
         shlex.split(
-            """ ditto-cli convert --from="opendss" --to="gridlabd" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
+            """ poetry run ditto-cli convert --from="opendss" --to="gridlabd" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
                 output_path.name
-            ).strip()
+            ).strip(),
         )
     )
-    p.wait()
+
     with open(os.path.join(output_path.name, "Model.glm")) as f:
         output = f.read().strip()
     with open(
@@ -32,8 +32,6 @@ def test_opendss_to_gridlabd_cli():
         )
     ) as f:
         compare = f.read().strip()
-    if p.returncode != 0:
-        raise Exception("Error with {}".format(p.returncode))
     # for l in output.splitlines():
     # assert l in compare, "Output from OpenDSS 2 GridLAB-D conversion does not match previous output. Please update test case or contact developers."
     # for l in compare.splitlines():
@@ -44,30 +42,24 @@ def test_opendss_to_gridlabd_cli():
 def test_gridlabd_to_opendss_cli():
 
     output_path = tempfile.TemporaryDirectory()
-    p = subprocess.Popen(
+    subprocess.Popen(
         shlex.split(
-            """ ditto-cli convert --from="gridlabd" --to="opendss" --input="./tests/data/small_cases/gridlabd/ieee_4node/node.glm" --output="{}" """.format(
+            """ poetry run ditto-cli convert --from="gridlabd" --to="opendss" --input="./tests/data/small_cases/gridlabd/ieee_4node/node.glm" --output="{}" """.format(
                 output_path.name
             ).strip()
         )
     )
-    p.wait()
-    if p.returncode != 0:
-        raise Exception("Error in ditto cli: {}".format(p.returncode))
 
 
 def test_opendss_to_ephasor_cli():
     output_path = tempfile.TemporaryDirectory()
-    p = subprocess.Popen(
+    subprocess.Popen(
         shlex.split(
-            """ditto-cli convert --from="opendss" --to="ephasor" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
+            """poetry run ditto-cli convert --from="opendss" --to="ephasor" --input="./tests/data/small_cases/opendss/ieee_13node/master.dss" --output="{}" """.format(
                 output_path.name
             ).strip()
         )
     )
-    p.wait()
-    if p.returncode != 0:
-        raise Exception("Error in ditto cli: {}".format(p.returncode))
 
 
 @pt.mark.skip()  # currently not running...
@@ -76,13 +68,41 @@ def test_metric_computation_cli():
     TODO: Add better tests that check the metric values and compare them with ground truth.
     """
     output_path = tempfile.TemporaryDirectory()
-    p = subprocess.Popen(
+    subprocess.Popen(
         shlex.split(
-            """ ditto-cli metric --from="opendss" --to="xlsx" --input="./read_dss_13node.json" --feeder=False --output="{}" """.format(
+            """ poetry run ditto-cli metric --from="opendss" --to="xlsx" --input="./read_dss_13node.json" --feeder=False --output="{}" """.format(
                 output_path.name
             ).strip()
         )
     )
-    p.wait()
-    if p.returncode != 0:
-        raise Exception("Error in ditto cli: {}".format(p.returncode))
+
+
+def run_command(args: list, ignore_errors: bool = False, print_output: bool = True, verbose=0, **kwargs) -> str:
+    """ Run a command and print the output after it is finished.
+    :param args: list of arguments to pass to the command
+    :param ignore_errors: if True, ignore errors and just return the output, if True, raise a RuntimeError containing stdout+stderr if the command fails.
+    :param print_output: if True, print the output of the command to stdout
+    :return: the output of the command
+    :raises RuntimeError: if the command fails and ignore_errors is False
+    """
+    if verbose > 0:
+        print(f"\nRunning command> {' '.join(args)}")
+    result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    output_bytes = result.stdout
+    err_bytes = result.stderr
+    try:
+        output = output_bytes.decode("utf-8", errors="replace")
+        error = err_bytes.decode("utf-8", errors="replace")
+    except UnicodeDecodeError:
+        output = output_bytes.decode("ascii", errors="replace")
+        error = err_bytes.decode("ascii", errors="replace")
+
+    if result.returncode != 0 and ignore_errors is False:
+        raise RuntimeError(output+"\n"+error)
+    elif print_output or verbose > 0:
+        try:
+            print(output+"\n"+error)
+        except UnicodeEncodeError as e:
+            raise e
+
+    return output
