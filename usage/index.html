@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Usage - ditto</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Usage";
+        var mkdocs_page_input_path = "usage.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> ditto
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../authors/">Credits</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../cli-examples/">DiTTo examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../history/">History</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../metrics/">Metrics documentation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../modifications/">Modifications documentation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../notes/">Notes</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../plugin/">Plugin</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../power_flow_minimum_requirements/">Power Flow Minimum Requirements</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../readme/">Introduction</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Usage</a>
+    <ul class="current">
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Developer guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guide/">Index</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guide/docs/">Docs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guide/install/">Install</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guide/style/">Style</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">ditto</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+      <li>Usage</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="usage">Usage</h1>
+<p>The most common usage is when one has  a system in a given format, say OpenDSS, and wants to convert it to another format, say CYME. The convertion process will always be structured in the following way:</p>
+<ul>
+<li>Instanciate a store object which will store all the objects and attributes of your model</li>
+</ul>
+<pre><code class="language-python">from ditto.store import Store
+m=Store()
+</code></pre>
+<ul>
+<li>Instanciate a reader object with the required arguments. These arguments may vary depending on the format. For example, the OpenDSS reader expects a path for the master.dss file as well as a path for the buscoord.dss file.</li>
+</ul>
+<pre><code class="language-python">from ditto.readers.opendss.read import reader
+opendss_reader=reader(master_file='/Users/johny_cash/IEEE_13_node/master.dss,
+                      buscoordinates_file='/Users/johny_cash/IEEE_13_node/buscoords.dss')
+</code></pre>
+<ul>
+<li>Call the parse method of the reader with the store object as argument.</li>
+</ul>
+<pre><code class="language-python">opendss_reader.parse(m)
+</code></pre>
+<ul>
+<li>Instanciate a writer object with the required arguments (output folder path…).</li>
+</ul>
+<pre><code class="language-python">from ditto.writers.cyme.write import writer
+cyme_writer=writer(output_path='./', log_path='./')
+</code></pre>
+<ul>
+<li>Call the write method of the writer with the store object as argument.</li>
+</ul>
+<pre><code class="language-python">cyme_writer.write(m)
+</code></pre>
+<p><strong>How is the code structured?</strong></p>
+<p>Here is a simplified view of the code structure (only the key components are displayed):</p>
+<pre><code class="language-eval_rst">DiTTo
+│   README.md
+│   docs
+|   tests
+│
+└───ditto
+    │   store.py
+    │
+    └───core
+    |   │   base.py
+    |   │   _factory.py
+    |   │   exceptions.py
+    |
+    └───readers
+    |   └───cyme
+    |   |      |   read.py
+    |   └───opendss
+    |          |   read.py
+    |
+    └───writers
+        └───cyme
+        |      |   write.py
+        └───opendss
+               |   write.py
+</code></pre>
+<p>Most of the code is located in the ditto directory. The core structure responsible for storing the objects is implemented in the core folder. Readers are implemented in readers and writers in writers. These two folders then contain the different format in different subfolders.</p>
+<p><strong>Example 1:</strong> The OpenDSS reader is located in:</p>
+<pre><code class="language-bash">DiTTo/ditto/readers/opendss/read.py
+</code></pre>
+<p>And can be imported with:</p>
+<pre><code class="language-python">from ditto.readers.opendss.read import Reader
+</code></pre>
+<p><strong>Example 2:</strong> The CYME writer is located in:</p>
+<pre><code class="language-bash">DiTTo/ditto/writers/cyme/write.py
+</code></pre>
+<p>And can be imported with:</p>
+<pre><code class="language-python">from ditto.writers.cyme.write import Writer
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../readme/" class="btn btn-neutral float-left" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../developer-guide/" class="btn btn-neutral float-right" title="Index">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../readme/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../developer-guide/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
