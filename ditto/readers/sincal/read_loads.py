@@ -337,7 +337,7 @@ class ReadLoads:
                             load.phase_loads.append(phase_load)
         self.logger.debug(f"Thread {__name__} finishing %s ", current)
 
-    @log_exceptions
+    # @log_exceptions
     def parse_LV_Loads(self, model, bus):
         self.logger.info(f"Thread {__name__} starting")
         # self.logger.debug("Start of load")

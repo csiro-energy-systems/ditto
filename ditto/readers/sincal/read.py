@@ -1,42 +1,19 @@
 from __future__ import absolute_import, division, print_function
-from builtins import super, range, zip, round, map
-import logging
-import math
-import sys
-import os
-import json
-import cmath
-import sqlite3
-from sqlite3 import Error
-import math
-import numpy as np
-import time
+
 import datetime
+import logging
 import threading
-from tqdm import tqdm
+import time
+from abc import ABC
+from builtins import super
+from sqlite3 import Error
+
+import sqlalchemy as sa
+from sqlalchemy import text, create_engine, inspection, Inspector
 
 from ..abstract_lv_reader import AbstractLVReader
 
 logger = logging.getLogger(__name__)
-
-from ditto.readers.abstract_reader import AbstractReader
-from ditto.store import Store
-from ditto.models.node import Node
-from ditto.models.line import Line
-from ditto.models.load import Load
-from ditto.models.phase_load import PhaseLoad
-from ditto.models.position import Position
-from ditto.models.power_source import PowerSource
-from ditto.models.powertransformer import PowerTransformer
-from ditto.models.winding import Winding
-from ditto.models.phase_winding import PhaseWinding
-from ditto.models.regulator import Regulator
-from ditto.models.wire import Wire
-from ditto.models.capacitor import Capacitor
-from ditto.models.phase_capacitor import PhaseCapacitor
-from ditto.models.reactor import Reactor
-from ditto.models.phase_reactor import PhaseReactor
-from ditto.models.photovoltaic import Photovoltaic
 
 from .read_lines import ReadLines
 
@@ -49,313 +26,232 @@ from .read_capacitors import ReadCapacitors
 from .read_reactors import ReadReactors
 from .read_photovoltaics import ReadPhotovoltaics
 
-# ditto-cli convert --from="sincal" --to="opendss" --input="../../../PSS Files/Sincal/Network/ExampleNetwork_files/database.db" --output="./"
 
+class Reader(AbstractLVReader, ABC):
+    """ Basic Reader for the Sincal format
+    Example CLI usage:
 
-class Reader(AbstractLVReader):
+        ditto-cli convert --from="sincal" --to="opendss" --input="path/to/database.[mdb|db]" --output="./"
+
+    """
     format_name = 'sincal'
 
-    def create_connection(self, db_file):
+    def create_connection(self, db_file: str) -> sa.engine.Engine:
         """ create a database connection to the SQLite database
             specified by the db_file
-        :param db_file: database file
+        :param db_file: database file - can be an sqllite (.db) file or an MS Access (.mdb) file
         :return: Connection object or None
         """
-        conn = None
-        try:
-            conn = sqlite3.connect(db_file)
-        except Error as e:
-            self.logger.debug(f'Error creating sqlite connection to {db_file}', exc_info=1)
+        engine = None
+        if str(db_file).endswith('.db'):
+            """ SQLLite database """
 
-        return conn
+            try:
+                engine = create_engine(f'sqlite:///{db_file}', echo=False)
+                # conn = sqlite3.connect(db_file)
+                # conn.execute("PRAGMA table_info(Element)").fetchall()
+                # >>> [(0, 'Element_ID', 'INTEGER', 1, None, 0), (1, 'VoltLevel_ID', 'INTEGER', 0, None, 0)
+
+            except Error as e:
+                self.logger.debug(f'Error creating sqlite connection to {db_file}', exc_info=1)
+
+        elif str(db_file).endswith('.mdb'):
+            """ MS Access database """
+
+            connection_string = (
+                r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
+                fr"DBQ={db_file.resolve()};"
+                r"ExtendedAnsiSQL=1;"
+            )
+            connection_url = sa.engine.URL.create(
+                "access+pyodbc",
+                query={"odbc_connect": connection_string}
+            )
+            engine = sa.create_engine(connection_url)
+
+        return engine.connect()
+
+    def query(self, conn, query, params=None):
+        rows = list(conn.execute(text(query), params))
+        return rows
+
+    def table_column_names(self, conn, table_name):
+        inspect: Inspector = inspection.inspect(conn.engine)
+        cols = inspect.get_columns(table_name)
+        return cols
 
     def read_lineTerminals(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Terminal WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_lineTerminalsByNodeID(self, conn, node_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Terminal WHERE Node_ID=?", (node_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
 
     def read_lineTerminalsByElementID(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Terminal WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_lineNode(self, conn, node_ID):
         self.logger.debug(f'Reading line node {node_ID}')
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Node WHERE Node_ID=?", (node_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Node WHERE Node_ID=:id", {"id": node_ID})
 
     def read_elements(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Element")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Element")
 
     def read_elementLines(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Element WHERE Type=?", ("Line",))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Element WHERE Type=Line")
 
     def read_element(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Element WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM Element WHERE Element_ID=:id", {"id": element_ID})
 
     def read_element_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Element)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Element")
 
     def read_terminal_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Terminal)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Terminal")
 
     def read_breaker_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Breaker)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Breaker")
 
     def read_line_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Line)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Line")
 
     def read_lines(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Line")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Line")
 
     def read_line(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Line WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM Line WHERE Element_ID:id", {"id": element_ID})
 
     def read_breaker(self, conn, terminal_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Breaker WHERE Terminal_ID=?", (terminal_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM Breaker WHERE Terminal_ID=:id", {"id": terminal_ID})
 
     def read_voltageLevel_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(VoltageLevel)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "VoltageLevel")
 
     def read_infeeder_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Infeeder)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Infeeder")
 
     def read_nodes(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Node")
 
-        rows = cur.fetchall()
-        return rows
+        return self.query(conn, "SELECT * FROM Node")
 
     def read_nodes_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Node)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Node")
 
     def read_graphicNode(self, conn, node_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM GraphicNode WHERE Node_ID=?", (node_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM GraphicNode WHERE Node_ID=:id", {"id": node_ID})
 
     def read_loads(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Load")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Load")
 
     def read_load_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Load)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Load")
 
     def read_load_Element_ID(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Load WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Load WHERE Element_ID:id", {"id": element_ID})
 
     def read_calcParameter(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM CalcParameter")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM CalcParameter")
 
     def read_calcParameter_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(CalcParameter)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "CalcParameter")
 
     def read_infeederSource(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Infeeder WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Infeeder WHERE Element_ID=:id", {"id": element_ID})
 
     def read_voltageLevel(self, conn, voltLevel_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM VoltageLevel WHERE VoltLevel_ID=?", (voltLevel_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM VoltageLevel WHERE VoltLevel_ID=:id", {"id": voltLevel_ID})
 
     def read_voltageLevels(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM VoltageLevel")
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM VoltageLevel")
 
     def read_terminal(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Terminal WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_terminal_nodeID(self, conn, node_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Terminal WHERE Node_ID=?", (node_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
 
     def read_infeeders(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Infeeder")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Infeeder")
 
     def read_manipulation(self, conn, mpl_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM Manipulation WHERE Mpl_ID=?", (mpl_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM Manipulation WHERE Mpl_ID=:id", {"id": mpl_ID})
 
     def read_manipulation_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(Manipulation)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "Manipulation")
 
     def read_synchronousMachines(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM SynchronousMachine")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM SynchronousMachine")
 
     def read_synchronousMachines_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(SynchronousMachine)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "SynchronousMachine")
 
     def read_twoWindingTransformer(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM TwoWindingTransformer WHERE Element_ID=?", (element_ID,)
-        )
-        row = cur.fetchall()
-        return row
+        return self.query(conn, "SELECT * FROM TwoWindingTransformer WHERE Element_ID=:id", {"id": element_ID})
 
     def read_twoWindingTransformers(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM TwoWindingTransformer")
-        row = cur.fetchall()
-        return row
+        return self.query(conn, "SELECT * FROM TwoWindingTransformer")
 
     def read_twoWinding_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(TwoWindingTransformer)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "TwoWindingTransformer")
 
     def read_threeWindingTransformer(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT * FROM ThreeWindingTransformer WHERE Element_ID=?", (element_ID,)
-        )
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM ThreeWindingTransformer WHERE Element_ID=:id", {"id": element_ID})
 
     def read_serialCondensator(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM SerialCondensator WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM SerialCondensator WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntCondensators(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM ShuntCondensator")
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM ShuntCondensator")
 
     def read_shuntCondensator(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM ShuntCondensator WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM ShuntCondensator WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntCondensator_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(ShuntCondensator)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "ShuntCondensator")
 
     def read_serialReactor(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM SerialReactor WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM SerialReactor WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntReactor(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM ShuntReactor WHERE Element_ID=?", (element_ID,))
-        row = cur.fetchall()
-        return row
+
+        return self.query(conn, "SELECT * FROM ShuntReactor WHERE Element_ID=:id", {"id": element_ID})
 
     def read_dcInfeeder(self, conn):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM DCInfeeder")
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM DCInfeeder")
 
     def read_dcInfeeder_Element_ID(self, conn, element_ID):
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM DCInfeeder WHERE Element_ID=?", (element_ID,))
-        rows = cur.fetchall()
-        return rows
+
+        return self.query(conn, "SELECT * FROM DCInfeeder WHERE Element_ID=:id", {"id": element_ID})
 
     def read_dcInfeeder_column_names(self, conn):
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(DCInfeeder)")
-        rows = cur.fetchall()
-        return rows
+        return self.table_column_names(conn, "DCInfeeder")
 
     def connectionType(self, vectorGroup, winding):
         connection = None
@@ -692,7 +588,7 @@ class Reader(AbstractLVReader):
         time.sleep(2)
         self.logger.info(f"Thread {__name__} %s: finishing")
 
-    def get_LV_Transformers(self, model):
+    def get_lv_transformers(self, model):
         self.logger.info(f'Reading LV Transformers.  Separating LV Networks: {self.separate}, Voltage Filter: {self.filter}')
         self.filter = "LV"
         ReadTransformers.parse_transformers(
@@ -702,13 +598,13 @@ class Reader(AbstractLVReader):
     def get_LV_Transformer(self, model, bus):
         ReadTransformers.parse_transformer(self, model, bus)
 
-    def get_LV_Loads(self, model, bus):
+    def get_lv_loads(self, model, bus):
         ReadLoads.parse_LV_Loads(self, model, bus)
 
-    def get_LV_Photovoltaics(self, model, bus):
+    def get_lv_photovoltaics(self, model, bus):
         ReadPhotovoltaics.parse_LV_Photovoltaics(self, model, bus)
 
-    def get_LV_Lines(self, model, bus):
+    def get_lv_lines(self, model, bus):
         self.usedBuses = {}
         self.usedLines = {}
         self.usedBuses[bus] = bus
@@ -720,9 +616,9 @@ class Reader(AbstractLVReader):
                 self.get_Next_LV_Lines(model, Bus)
 
     def get_Next_LV_Lines(self, model, bus):
-        self.get_LV_Loads(model, bus)
-        self.get_LV_Photovoltaics(model, bus)
-        self.get_LV_Node(model, bus)
+        self.get_lv_loads(model, bus)
+        self.get_lv_photovoltaics(model, bus)
+        self.get_lv_node(model, bus)
         nextBus = ReadLines.parse_LV_Lines(self, model, bus)
         for Bus in nextBus:
             if not Bus in self.usedBuses:
@@ -730,7 +626,7 @@ class Reader(AbstractLVReader):
                 self.usedBuses[Bus] = Bus
                 self.get_Next_LV_Lines(model, Bus)
 
-    def get_LV_Node(self, model, bus):
+    def get_lv_node(self, model, bus):
         ReadNodes.parse_LV_Node(self, model, bus)
 
     def read_multi_threaded(self, model, show_progress):
@@ -812,7 +708,6 @@ class Reader(AbstractLVReader):
         ReadTransformers.parse_transformers(self, model, show_progress)
         ReadReactors.parse_reactors(self, model, show_progress)
 
-
     def parse(self, model, **kwargs):
         '''
         Parses the model without any network splitting.
@@ -835,7 +730,6 @@ class Reader(AbstractLVReader):
         # else:
         #     self.read_multi_threaded(model,  self.show_progress) # About 5x speedup, not sure of accuracy though
 
-
         # Call parse method of abstract reader
         super(Reader, self).parse(model, **kwargs)
         self.logger.debug(
@@ -851,7 +745,8 @@ class Reader(AbstractLVReader):
         This parameter can take a value LV (low voltage) or MV (high voltage) and determines whether you are allowing through only the
         low voltage and below part of the network, or only the medium voltage and above part of the network.
         :param transformer: (-transformer): a Boolean, determines, whether the transformers that connect the MV and LV sides of the network are included in the -filtered and -separated results or not.
-        :param separate: (-separate): splits the file into separate LV networks by selecting every node/wire on the LV side of each transformer (greedily, but avoiding overlaps). TODO: Somehow takes breaker states into account also.
+        :param separate: (-separate): splits the file into separate LV networks by selecting every node/wire on the LV side of each transformer (greedily, but avoiding overlaps). TODO: Somehow
+        takes breaker states into account also.
         :param merge: (-merge): Determines whether contiguous Lines with similar properties are merged into a single longer line.
         '''
         self.logger = logging.getLogger(__name__)
@@ -865,9 +760,7 @@ class Reader(AbstractLVReader):
 
         self.separate = kwargs.get("separate")
 
-
         super(Reader, self).__init__(**kwargs)
-
 
 # if __name__ == '__main__':
 #    reader = Reader()

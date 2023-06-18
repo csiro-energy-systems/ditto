@@ -35,6 +35,8 @@ sphinx-rtd-theme = { optional = true, version = "*" }
 sphinxcontrib-napoleon = { optional = true, version = "*" }
 xlrd = { optional = true, version = "*" }
 xlsxwriter = { optional = true, version = "*" }
+sqlalchemy = {version = "^2.0.16", optional = true}
+sqlalchemy-access = {version = "^2.0.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 black = "*"
@@ -48,7 +50,8 @@ synergi = ["numpy", "pandas"]
 cyme = ["numpy"]
 gridlabd = ["croniter", "numpy"]
 ephasor = ["numpy", "pandas"]
-all = ["croniter", "lxml", "numpy", "opendssdirect-py", "pandas", "pandas-access", "scipy", "xlrd", "xlsxwriter"]
+sincal = ["sqlalchemy", "sqlalchemy-access"]
+all = ["croniter", "lxml", "numpy", "opendssdirect-py", "pandas", "pandas-access", "scipy", "xlrd", "xlsxwriter", "sqlalchemy"]
 extras = ["croniter", "lxml", "numpy", "opendssdirect-py", "pandas", "pandas-access", "scipy", "xlrd", "xlsxwriter"]
 opendss = ["OpenDSSDirect.py", "pandas", "numpy"]
 
