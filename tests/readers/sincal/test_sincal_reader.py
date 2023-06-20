@@ -1,5 +1,6 @@
 import collections
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Union
@@ -22,9 +23,9 @@ logger.setLevel("INFO")
 
 class TestSincalReader:
 
-    @pytest.mark.skip("Need to find releasable Sincal/Sqllite data to include for this test")
+    # @pytest.mark.skip("Need to find releasable Sincal/Sqllite data to include for this test")
     def test_sincal_sqllite_to_opendss(self):
-        data_dir = Path("../../../tests/data/")
+        data_dir = Path("tests/data/")
 
         test_networks = {
             'LVFT-67088': data_dir / "big_cases/sincal/LVFT-67088/67088_files/database.db",
@@ -46,8 +47,9 @@ class TestSincalReader:
                             assert Path(f"{output_path}/{idx}/Master.dss").exists(), "DSS file not found at expected location"
                     vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engine='pyvis')
 
+    @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Sincal Access DBs currently only supported by sqlalchemy-access on Windows")
     def test_sincal_access_to_opendss(self):
-        data_dir = Path("../../../tests/data/")
+        data_dir = Path("tests/data/")
 
         test_networks = {
             'NFTS_Representative_19': data_dir / "small_cases/sincal/NFTS_Representative_19/database.mdb",

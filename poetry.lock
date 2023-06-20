@@ -2933,4 +2933,4 @@ vis = ["matplotlib", "pyvis"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
-content-hash = "924d2085653b12594d1ff3ef65ab1fc59caff8b003be82d4507fd3134b6921fb"
+content-hash = "ad9105d72667eed09ad3ff8f601e7ebef2ab8ef7fd0ca38f3c4cd7fd413084d9"
