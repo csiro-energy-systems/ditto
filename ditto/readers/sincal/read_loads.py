@@ -51,72 +51,72 @@ class ReadLoads:
         with conn:
             Loads = self.read_loads(conn)
             elementColumnNames = self.read_element_column_names(conn)
-            for name in elementColumnNames:
-                if name[1] == "Element_ID":
-                    self.elementID = name[0]
-                elif name[1] == "Type":
-                    self.elementType = name[0]
-                elif name[1] == "Name":
-                    self.elementName = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[0]
+            for idx, name in enumerate(elementColumnNames):
+                if name["name"] == "Element_ID":
+                    self.elementID = idx
+                elif name["name"] == "Type":
+                    self.elementType = idx
+                elif name["name"] == "Name":
+                    self.elementName = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.elementVoltLevel = idx
 
             terminalColumnNames = self.read_terminal_column_names(conn)
-            for name in terminalColumnNames:
-                if name[1] == "TerminalNo":
-                    self.terminalNo = name[0]
-                elif name[1] == "Node_ID":
-                    self.terminalID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.terminalPhase = name[0]
+            for idx, name in enumerate(terminalColumnNames):
+                if name["name"] == "TerminalNo":
+                    self.terminalNo = idx
+                elif name["name"] == "Node_ID":
+                    self.terminalID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.terminalPhase = idx
             self.calcParameter = self.read_calcParameter(conn)[0]
             calcParameterNames = self.read_calcParameter_column_names(conn)
-            for name in calcParameterNames:
-                if name[1] == "ull":
-                    self.loadVoltageLowerLimit = name[0]
-                elif name[1] == "uul":
-                    self.loadVoltageUpperLimit = name[0]
+            for idx, name in enumerate(calcParameterNames):
+                if name["name"] == "ull":
+                    self.loadVoltageLowerLimit = idx
+                elif name["name"] == "uul":
+                    self.loadVoltageUpperLimit = idx
             loadColumnNames = self.read_load_column_names(conn)
-            for name in loadColumnNames:
-                if name[1] == "Element_ID":
-                    self.loadID = name[0]
-                elif name[1] == "P1":
-                    self.loadP1 = name[0]
-                elif name[1] == "P2":
-                    self.loadP2 = name[0]
-                elif name[1] == "P3":
-                    self.loadP3 = name[0]
-                elif name[1] == "Q1":
-                    self.loadQ1 = name[0]
-                elif name[1] == "Q2":
-                    self.loadQ2 = name[0]
-                elif name[1] == "Q3":
-                    self.loadQ3 = name[0]
-                elif name[1] == "cosphi":
-                    self.loadPF = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.loadFlagVariant = name[0]
-                elif name[1] == "P":
-                    self.loadP = name[0]
-                elif name[1] == "Q":
-                    self.loadQ = name[0]
-                elif name[1] == "S":
-                    self.loadS = name[0]
-                elif name[1] == "fP":
-                    self.loadfP = name[0]
-                elif name[1] == "fQ":
-                    self.loadfQ = name[0]
-                elif name[1] == "fS":
-                    self.loadfS = name[0]
-                elif name[1] == "Flag_Lf":
-                    self.loadType = name[0]
-                elif name[1] == "u":
-                    self.loadVoltagePercentage = name[0]
+            for idx, name in enumerate(loadColumnNames):
+                if name["name"] == "Element_ID":
+                    self.loadID = idx
+                elif name["name"] == "P1":
+                    self.loadP1 = idx
+                elif name["name"] == "P2":
+                    self.loadP2 = idx
+                elif name["name"] == "P3":
+                    self.loadP3 = idx
+                elif name["name"] == "Q1":
+                    self.loadQ1 = idx
+                elif name["name"] == "Q2":
+                    self.loadQ2 = idx
+                elif name["name"] == "Q3":
+                    self.loadQ3 = idx
+                elif name["name"] == "cosphi":
+                    self.loadPF = idx
+                elif name["name"] == "Flag_Variant":
+                    self.loadFlagVariant = idx
+                elif name["name"] == "P":
+                    self.loadP = idx
+                elif name["name"] == "Q":
+                    self.loadQ = idx
+                elif name["name"] == "S":
+                    self.loadS = idx
+                elif name["name"] == "fP":
+                    self.loadfP = idx
+                elif name["name"] == "fQ":
+                    self.loadfQ = idx
+                elif name["name"] == "fS":
+                    self.loadfS = idx
+                elif name["name"] == "Flag_Lf":
+                    self.loadType = idx
+                elif name["name"] == "u":
+                    self.loadVoltagePercentage = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.totalLoads = 0
 
@@ -346,74 +346,74 @@ class ReadLoads:
         with conn:
             elements = self.read_lineTerminalsByNodeID(conn, bus)
             elementColumnNames = self.read_element_column_names(conn)
-            for name in elementColumnNames:
-                if name[1] == "Element_ID":
-                    self.elementID = name[0]
-                elif name[1] == "Type":
-                    self.elementType = name[0]
-                elif name[1] == "Name":
-                    self.elementName = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[0]
+            for idx, name in enumerate(elementColumnNames):
+                if name["name"] == "Element_ID":
+                    self.elementID = idx
+                elif name["name"] == "Type":
+                    self.elementType = idx
+                elif name["name"] == "Name":
+                    self.elementName = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.elementVoltLevel = idx
 
             terminalColumnNames = self.read_terminal_column_names(conn)
-            for name in terminalColumnNames:
-                if name[1] == "TerminalNo":
-                    self.terminalNo = name[0]
-                elif name[1] == "Node_ID":
-                    self.terminalID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.terminalPhase = name[0]
-                elif name[1] == "Element_ID":
-                    self.terminalElementID = name[0]
+            for idx, name in enumerate(terminalColumnNames):
+                if name["name"] == "TerminalNo":
+                    self.terminalNo = idx
+                elif name["name"] == "Node_ID":
+                    self.terminalID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.terminalPhase = idx
+                elif name["name"] == "Element_ID":
+                    self.terminalElementID = idx
             self.calcParameter = self.read_calcParameter(conn)[0]
             calcParameterNames = self.read_calcParameter_column_names(conn)
-            for name in calcParameterNames:
-                if name[1] == "ull":
-                    self.loadVoltageLowerLimit = name[0]
-                elif name[1] == "uul":
-                    self.loadVoltageUpperLimit = name[0]
+            for idx, name in enumerate(calcParameterNames):
+                if name["name"] == "ull":
+                    self.loadVoltageLowerLimit = idx
+                elif name["name"] == "uul":
+                    self.loadVoltageUpperLimit = idx
             loadColumnNames = self.read_load_column_names(conn)
-            for name in loadColumnNames:
-                if name[1] == "Element_ID":
-                    self.loadID = name[0]
-                elif name[1] == "P1":
-                    self.loadP1 = name[0]
-                elif name[1] == "P2":
-                    self.loadP2 = name[0]
-                elif name[1] == "P3":
-                    self.loadP3 = name[0]
-                elif name[1] == "Q1":
-                    self.loadQ1 = name[0]
-                elif name[1] == "Q2":
-                    self.loadQ2 = name[0]
-                elif name[1] == "Q3":
-                    self.loadQ3 = name[0]
-                elif name[1] == "cosphi":
-                    self.loadPF = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.loadFlagVariant = name[0]
-                elif name[1] == "P":
-                    self.loadP = name[0]
-                elif name[1] == "Q":
-                    self.loadQ = name[0]
-                elif name[1] == "S":
-                    self.loadS = name[0]
-                elif name[1] == "fP":
-                    self.loadfP = name[0]
-                elif name[1] == "fQ":
-                    self.loadfQ = name[0]
-                elif name[1] == "fS":
-                    self.loadfS = name[0]
-                elif name[1] == "Flag_Lf":
-                    self.loadType = name[0]
-                elif name[1] == "u":
-                    self.loadVoltagePercentage = name[0]
+            for idx, name in enumerate(loadColumnNames):
+                if name["name"] == "Element_ID":
+                    self.loadID = idx
+                elif name["name"] == "P1":
+                    self.loadP1 = idx
+                elif name["name"] == "P2":
+                    self.loadP2 = idx
+                elif name["name"] == "P3":
+                    self.loadP3 = idx
+                elif name["name"] == "Q1":
+                    self.loadQ1 = idx
+                elif name["name"] == "Q2":
+                    self.loadQ2 = idx
+                elif name["name"] == "Q3":
+                    self.loadQ3 = idx
+                elif name["name"] == "cosphi":
+                    self.loadPF = idx
+                elif name["name"] == "Flag_Variant":
+                    self.loadFlagVariant = idx
+                elif name["name"] == "P":
+                    self.loadP = idx
+                elif name["name"] == "Q":
+                    self.loadQ = idx
+                elif name["name"] == "S":
+                    self.loadS = idx
+                elif name["name"] == "fP":
+                    self.loadfP = idx
+                elif name["name"] == "fQ":
+                    self.loadfQ = idx
+                elif name["name"] == "fS":
+                    self.loadfS = idx
+                elif name["name"] == "Flag_Lf":
+                    self.loadType = idx
+                elif name["name"] == "u":
+                    self.loadVoltagePercentage = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.totalLoads = 0
             for element in elements:

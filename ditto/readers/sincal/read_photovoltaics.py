@@ -49,69 +49,69 @@ class ReadPhotovoltaics:
             dcInfeedercolumnNames = self.read_dcInfeeder_column_names(conn)
             manipulationColumnNames = self.read_manipulation_column_names(conn)
             elementColumnNames = self.read_element_column_names(conn)
-            for name in elementColumnNames:
-                if name[1] == "Element_ID":
-                    self.elementID = name[0]
-                elif name[1] == "Type":
-                    self.elementType = name[0]
-                elif name[1] == "Name":
-                    self.elementName = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[0]
+            for idx, name in enumerate(elementColumnNames):
+                if name["name"] == "Element_ID":
+                    self.elementID = idx
+                elif name["name"] == "Type":
+                    self.elementType = idx
+                elif name["name"] == "Name":
+                    self.elementName = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.elementVoltLevel = idx
 
             terminalColumnNames = self.read_terminal_column_names(conn)
-            for name in terminalColumnNames:
-                if name[1] == "TerminalNo":
-                    self.terminalNo = name[0]
-                elif name[1] == "Node_ID":
-                    self.terminalID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.terminalPhase = name[0]
+            for idx, name in enumerate(terminalColumnNames):
+                if name["name"] == "TerminalNo":
+                    self.terminalNo = idx
+                elif name["name"] == "Node_ID":
+                    self.terminalID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.terminalPhase = idx
 
-            for name in dcInfeedercolumnNames:
-                if name[1] == "Element_ID":
-                    self.dcInfeederID = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.dcInfeederFlagVariant = name[0]
-                elif name[1] == "P":
-                    self.dcInfeederActivePower = name[0]
-                elif name[1] == "Q":
-                    self.dcInfeederReactivePower = name[0]
-                elif name[1] == "fP":
-                    self.dcInfeederFactorP = name[0]
-                elif name[1] == "fQ":
-                    self.dcInfeederFactorQ = name[0]
-                elif name[1] == "Flag_Lf":
-                    self.dcInfeederFlagInputType = name[0]
-                elif name[1] == "cosphi":
-                    self.dcInfeederPowerFactor = name[0]
-                elif name[1] == "Umin_Inverter":
-                    self.dcInfeederUminInverter = name[0]
-                elif name[1] == "Umax_Inverter":
-                    self.dcInfeederUmaxInverter = name[0]
-                elif name[1] == "Mpl_ID":
-                    self.dcInfeederManipulation = name[0]
+            for idx, name in enumerate(dcInfeedercolumnNames):
+                if name["name"] == "Element_ID":
+                    self.dcInfeederID = idx
+                elif name["name"] == "Flag_Variant":
+                    self.dcInfeederFlagVariant = idx
+                elif name["name"] == "P":
+                    self.dcInfeederActivePower = idx
+                elif name["name"] == "Q":
+                    self.dcInfeederReactivePower = idx
+                elif name["name"] == "fP":
+                    self.dcInfeederFactorP = idx
+                elif name["name"] == "fQ":
+                    self.dcInfeederFactorQ = idx
+                elif name["name"] == "Flag_Lf":
+                    self.dcInfeederFlagInputType = idx
+                elif name["name"] == "cosphi":
+                    self.dcInfeederPowerFactor = idx
+                elif name["name"] == "Umin_Inverter":
+                    self.dcInfeederUminInverter = idx
+                elif name["name"] == "Umax_Inverter":
+                    self.dcInfeederUmaxInverter = idx
+                elif name["name"] == "Mpl_ID":
+                    self.dcInfeederManipulation = idx
 
-            for name in manipulationColumnNames:
-                if name[1] == "Mpl_ID":
-                    self.manipulationID = name[0]
-                elif name[1] == "Name":
-                    self.manipulationName = name[0]
-                elif name[1] == "fP":
-                    self.manipulationFP = name[0]
+            for idx, name in enumerate(manipulationColumnNames):
+                if name["name"] == "Mpl_ID":
+                    self.manipulationID = idx
+                elif name["name"] == "Name":
+                    self.manipulationName = idx
+                elif name["name"] == "fP":
+                    self.manipulationFP = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.calcParameter = self.read_calcParameter(conn)[0]
             calcParameterNames = self.read_calcParameter_column_names(conn)
-            for name in calcParameterNames:
-                if name[1] == "ull":
-                    self.loadVoltageLowerLimit = name[0]
-                elif name[1] == "uul":
-                    self.loadVoltageUpperLimit = name[0]
+            for idx, name in enumerate(calcParameterNames):
+                if name["name"] == "ull":
+                    self.loadVoltageLowerLimit = idx
+                elif name["name"] == "uul":
+                    self.loadVoltageUpperLimit = idx
 
             self.totaldcInfeeder = 0
             from tqdm import tqdm
@@ -331,71 +331,71 @@ class ReadPhotovoltaics:
             dcInfeedercolumnNames = self.read_dcInfeeder_column_names(conn)
             manipulationColumnNames = self.read_manipulation_column_names(conn)
             elementColumnNames = self.read_element_column_names(conn)
-            for name in elementColumnNames:
-                if name[1] == "Element_ID":
-                    self.elementID = name[0]
-                elif name[1] == "Type":
-                    self.elementType = name[0]
-                elif name[1] == "Name":
-                    self.elementName = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[0]
+            for idx, name in enumerate(elementColumnNames):
+                if name["name"] == "Element_ID":
+                    self.elementID = idx
+                elif name["name"] == "Type":
+                    self.elementType = idx
+                elif name["name"] == "Name":
+                    self.elementName = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.elementVoltLevel = idx
 
             terminalColumnNames = self.read_terminal_column_names(conn)
-            for name in terminalColumnNames:
-                if name[1] == "TerminalNo":
-                    self.terminalNo = name[0]
-                elif name[1] == "Node_ID":
-                    self.terminalID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.terminalPhase = name[0]
-                elif name[1] == "Element_ID":
-                    self.terminalElementID = name[0]
+            for idx, name in enumerate(terminalColumnNames):
+                if name["name"] == "TerminalNo":
+                    self.terminalNo = idx
+                elif name["name"] == "Node_ID":
+                    self.terminalID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.terminalPhase = idx
+                elif name["name"] == "Element_ID":
+                    self.terminalElementID = idx
 
-            for name in dcInfeedercolumnNames:
-                if name[1] == "Element_ID":
-                    self.dcInfeederID = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.dcInfeederFlagVariant = name[0]
-                elif name[1] == "P":
-                    self.dcInfeederActivePower = name[0]
-                elif name[1] == "Q":
-                    self.dcInfeederReactivePower = name[0]
-                elif name[1] == "fP":
-                    self.dcInfeederFactorP = name[0]
-                elif name[1] == "fQ":
-                    self.dcInfeederFactorQ = name[0]
-                elif name[1] == "Flag_Lf":
-                    self.dcInfeederFlagInputType = name[0]
-                elif name[1] == "cosphi":
-                    self.dcInfeederPowerFactor = name[0]
-                elif name[1] == "Umin_Inverter":
-                    self.dcInfeederUminInverter = name[0]
-                elif name[1] == "Umax_Inverter":
-                    self.dcInfeederUmaxInverter = name[0]
-                elif name[1] == "Mpl_ID":
-                    self.dcInfeederManipulation = name[0]
+            for idx, name in enumerate(dcInfeedercolumnNames):
+                if name["name"] == "Element_ID":
+                    self.dcInfeederID = idx
+                elif name["name"] == "Flag_Variant":
+                    self.dcInfeederFlagVariant = idx
+                elif name["name"] == "P":
+                    self.dcInfeederActivePower = idx
+                elif name["name"] == "Q":
+                    self.dcInfeederReactivePower = idx
+                elif name["name"] == "fP":
+                    self.dcInfeederFactorP = idx
+                elif name["name"] == "fQ":
+                    self.dcInfeederFactorQ = idx
+                elif name["name"] == "Flag_Lf":
+                    self.dcInfeederFlagInputType = idx
+                elif name["name"] == "cosphi":
+                    self.dcInfeederPowerFactor = idx
+                elif name["name"] == "Umin_Inverter":
+                    self.dcInfeederUminInverter = idx
+                elif name["name"] == "Umax_Inverter":
+                    self.dcInfeederUmaxInverter = idx
+                elif name["name"] == "Mpl_ID":
+                    self.dcInfeederManipulation = idx
 
-            for name in manipulationColumnNames:
-                if name[1] == "Mpl_ID":
-                    self.manipulationID = name[0]
-                elif name[1] == "Name":
-                    self.manipulationName = name[0]
-                elif name[1] == "fP":
-                    self.manipulationFP = name[0]
+            for idx, name in enumerate(manipulationColumnNames):
+                if name["name"] == "Mpl_ID":
+                    self.manipulationID = idx
+                elif name["name"] == "Name":
+                    self.manipulationName = idx
+                elif name["name"] == "fP":
+                    self.manipulationFP = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.calcParameter = self.read_calcParameter(conn)[0]
             calcParameterNames = self.read_calcParameter_column_names(conn)
-            for name in calcParameterNames:
-                if name[1] == "ull":
-                    self.loadVoltageLowerLimit = name[0]
-                elif name[1] == "uul":
-                    self.loadVoltageUpperLimit = name[0]
+            for idx, name in enumerate(calcParameterNames):
+                if name["name"] == "ull":
+                    self.loadVoltageLowerLimit = idx
+                elif name["name"] == "uul":
+                    self.loadVoltageUpperLimit = idx
 
             self.totaldcInfeeder = 0
 

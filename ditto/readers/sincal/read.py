@@ -81,32 +81,25 @@ class Reader(AbstractLVReader, ABC):
         return cols
 
     def read_lineTerminals(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_lineTerminalsByNodeID(self, conn, node_ID):
-
         return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
 
     def read_lineTerminalsByElementID(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_lineNode(self, conn, node_ID):
         self.logger.debug(f'Reading line node {node_ID}')
-
         return self.query(conn, "SELECT * FROM Node WHERE Node_ID=:id", {"id": node_ID})
 
     def read_elements(self, conn):
-
         return self.query(conn, "SELECT * FROM Element")
 
     def read_elementLines(self, conn):
-
         return self.query(conn, "SELECT * FROM Element WHERE Type=Line")
 
     def read_element(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM Element WHERE Element_ID=:id", {"id": element_ID})
 
     def read_element_column_names(self, conn):
@@ -122,15 +115,12 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "Line")
 
     def read_lines(self, conn):
-
         return self.query(conn, "SELECT * FROM Line")
 
     def read_line(self, conn, element_ID):
-
-        return self.query(conn, "SELECT * FROM Line WHERE Element_ID:id", {"id": element_ID})
+        return self.query(conn, "SELECT * FROM Line WHERE Element_ID=:id", {"id": element_ID})
 
     def read_breaker(self, conn, terminal_ID):
-
         return self.query(conn, "SELECT * FROM Breaker WHERE Terminal_ID=:id", {"id": terminal_ID})
 
     def read_voltageLevel_column_names(self, conn):
@@ -140,67 +130,54 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "Infeeder")
 
     def read_nodes(self, conn):
-
         return self.query(conn, "SELECT * FROM Node")
 
     def read_nodes_column_names(self, conn):
         return self.table_column_names(conn, "Node")
 
     def read_graphicNode(self, conn, node_ID):
-
         return self.query(conn, "SELECT * FROM GraphicNode WHERE Node_ID=:id", {"id": node_ID})
 
     def read_loads(self, conn):
-
         return self.query(conn, "SELECT * FROM Load")
 
     def read_load_column_names(self, conn):
         return self.table_column_names(conn, "Load")
 
     def read_load_Element_ID(self, conn, element_ID):
-
-        return self.query(conn, "SELECT * FROM Load WHERE Element_ID:id", {"id": element_ID})
+        return self.query(conn, "SELECT * FROM Load WHERE Element_ID=:id", {"id": element_ID})
 
     def read_calcParameter(self, conn):
-
         return self.query(conn, "SELECT * FROM CalcParameter")
 
     def read_calcParameter_column_names(self, conn):
         return self.table_column_names(conn, "CalcParameter")
 
     def read_infeederSource(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM Infeeder WHERE Element_ID=:id", {"id": element_ID})
 
     def read_voltageLevel(self, conn, voltLevel_ID):
-
         return self.query(conn, "SELECT * FROM VoltageLevel WHERE VoltLevel_ID=:id", {"id": voltLevel_ID})
 
     def read_voltageLevels(self, conn):
-
         return self.query(conn, "SELECT * FROM VoltageLevel")
 
     def read_terminal(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
 
     def read_terminal_nodeID(self, conn, node_ID):
-
         return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
 
     def read_infeeders(self, conn):
-
         return self.query(conn, "SELECT * FROM Infeeder")
 
     def read_manipulation(self, conn, mpl_ID):
-
         return self.query(conn, "SELECT * FROM Manipulation WHERE Mpl_ID=:id", {"id": mpl_ID})
 
     def read_manipulation_column_names(self, conn):
         return self.table_column_names(conn, "Manipulation")
 
     def read_synchronousMachines(self, conn):
-
         return self.query(conn, "SELECT * FROM SynchronousMachine")
 
     def read_synchronousMachines_column_names(self, conn):
@@ -216,38 +193,30 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "TwoWindingTransformer")
 
     def read_threeWindingTransformer(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM ThreeWindingTransformer WHERE Element_ID=:id", {"id": element_ID})
 
     def read_serialCondensator(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM SerialCondensator WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntCondensators(self, conn):
-
         return self.query(conn, "SELECT * FROM ShuntCondensator")
 
     def read_shuntCondensator(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM ShuntCondensator WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntCondensator_column_names(self, conn):
         return self.table_column_names(conn, "ShuntCondensator")
 
     def read_serialReactor(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM SerialReactor WHERE Element_ID=:id", {"id": element_ID})
 
     def read_shuntReactor(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM ShuntReactor WHERE Element_ID=:id", {"id": element_ID})
 
     def read_dcInfeeder(self, conn):
-
         return self.query(conn, "SELECT * FROM DCInfeeder")
 
     def read_dcInfeeder_Element_ID(self, conn, element_ID):
-
         return self.query(conn, "SELECT * FROM DCInfeeder WHERE Element_ID=:id", {"id": element_ID})
 
     def read_dcInfeeder_column_names(self, conn):
@@ -687,12 +656,12 @@ class Reader(AbstractLVReader, ABC):
         else:
             return self.parse_whole_network(model, show_progress)
 
-    def parse_whole_network(self, model, show_progress):
+    def parse_whole_network(self, model, show_progress) -> list:
         '''
         Parses the whole network as a single model
         @param model:
         @param show_progress:
-        @return: None
+        @return: a singletone list containing the network model Store
         '''
 
         if self.merge == False:
@@ -707,6 +676,7 @@ class Reader(AbstractLVReader, ABC):
         ReadSources.parse_sources(self, model, show_progress)
         ReadTransformers.parse_transformers(self, model, show_progress)
         ReadReactors.parse_reactors(self, model, show_progress)
+        return [model]
 
     def parse(self, model, **kwargs):
         '''

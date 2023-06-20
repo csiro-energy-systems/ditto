@@ -46,38 +46,38 @@ class ReadCapacitors:
         conn = self.create_connection(database)
         with conn:
             elementColumnNames = self.read_element_column_names(conn)
-            for name in elementColumnNames:
-                if name[1] == "Element_ID":
-                    self.elementID = name[0]
-                elif name[1] == "Type":
-                    self.elementType = name[0]
-                elif name[1] == "Name":
-                    self.elementName = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[0]
+            for idx, name in enumerate(elementColumnNames):
+                if name["name"] == "Element_ID":
+                    self.elementID = idx
+                elif name["name"] == "Type":
+                    self.elementType = idx
+                elif name["name"] == "Name":
+                    self.elementName = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.elementVoltLevel = idx
 
             terminalColumnNames = self.read_terminal_column_names(conn)
-            for name in terminalColumnNames:
-                if name[1] == "TerminalNo":
-                    self.terminalNo = name[0]
-                elif name[1] == "Node_ID":
-                    self.terminalID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.terminalPhase = name[0]
+            for idx, name in enumerate(terminalColumnNames):
+                if name["name"] == "TerminalNo":
+                    self.terminalNo = idx
+                elif name["name"] == "Node_ID":
+                    self.terminalID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.terminalPhase = idx
 
             shuntCondensatorColumnNames = self.read_shuntCondensator_column_names(conn)
-            for name in shuntCondensatorColumnNames:
-                if name[1] == "Element_ID":
-                    self.shuntCondensatorID = name[0]
-                elif name[1] == "Flag_Terminal":
-                    self.shuntCondensatorPhase = name[0]
-                elif name[1] == "Sn":
-                    self.shuntCondensatorRatedReactivePower = name[0]
+            for idx, name in enumerate(shuntCondensatorColumnNames):
+                if name["name"] == "Element_ID":
+                    self.shuntCondensatorID = idx
+                elif name["name"] == "Flag_Terminal":
+                    self.shuntCondensatorPhase = idx
+                elif name["name"] == "Sn":
+                    self.shuntCondensatorRatedReactivePower = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.totalCapacitors = 0
 

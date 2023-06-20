@@ -67,73 +67,73 @@ class ReadLines:
             elementColumnNames = self.read_element_column_names(conn)
             for idx, name in enumerate(elementColumnNames):
                 if name["name"] == "Element_ID":
-                    self.elementID = name[idx]
+                    self.elementID = idx
                 elif name["name"] == "Type":
-                    self.elementType = name[idx]
+                    self.elementType = idx
                 elif name["name"] == "Name":
-                    self.elementName = name[idx]
+                    self.elementName = idx
                 elif name["name"] == "Flag_State":
-                    self.elementFlagState = name[idx]
+                    self.elementFlagState = idx
                 elif name["name"] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[idx]
+                    self.elementVoltLevel = idx
             terminalColumnNames = self.read_terminal_column_names(conn)
             for idx, name in enumerate(terminalColumnNames):
                 if name["name"] == "TerminalNo":
-                    self.terminalNo = name[idx]
+                    self.terminalNo = idx
                 elif name["name"] == "Node_ID":
-                    self.terminalID = name[idx]
+                    self.terminalID = idx
                 elif name["name"] == "Terminal_ID":
-                    self.terminalIDNumber = name[idx]
+                    self.terminalIDNumber = idx
                 elif name["name"] == "Element_ID":
-                    self.terminalElementID = name[idx]
+                    self.terminalElementID = idx
                 elif name["name"] == "Flag_Terminal":
-                    self.terminalFlagTerminal = name[idx]
+                    self.terminalFlagTerminal = idx
             lineColumnNames = self.read_line_column_names(conn)
             for idx, name in enumerate(lineColumnNames):
                 if name["name"] == "Element_ID":
-                    self.lineID = name[idx]
+                    self.lineID = idx
                 elif name["name"] == "Flag_Variant":
-                    self.lineFlagVariant = name[idx]
+                    self.lineFlagVariant = idx
                 elif name["name"] == "l":
-                    self.lineLength = name[idx]
+                    self.lineLength = idx
                 elif name["name"] == "Flag_LineTyp":
-                    self.lineType = name[idx]
+                    self.lineType = idx
                 elif name["name"] == "q":
-                    self.lineCrossSection = name[idx]
+                    self.lineCrossSection = idx
                 elif name["name"] == "r0":
-                    self.lineR0 = name[idx]
+                    self.lineR0 = idx
                 elif name["name"] == "x0":
-                    self.lineX0 = name[idx]
+                    self.lineX0 = idx
                 elif name["name"] == "r":
-                    self.lineR1 = name[idx]
+                    self.lineR1 = idx
                 elif name["name"] == "x":
-                    self.lineX1 = name[idx]
+                    self.lineX1 = idx
                 elif name["name"] == "c":
-                    self.lineC1 = name[idx]
+                    self.lineC1 = idx
                 elif name["name"] == "c0":
-                    self.lineC0 = name[idx]
+                    self.lineC0 = idx
                 elif name["name"] == "Un":
-                    self.lineRatedVoltage = name[idx]
+                    self.lineRatedVoltage = idx
 
             breakerColumnNames = self.read_breaker_column_names(conn)
             for idx, name in enumerate(breakerColumnNames):
                 if name["name"] == "Terminal_ID":
-                    self.breakerTerminalID = name[idx]
+                    self.breakerTerminalID = idx
                 elif name["name"] == "Breaker_ID":
-                    self.breakerID = name[idx]
+                    self.breakerID = idx
                 elif name["name"] == "Flag_Variant":
-                    self.breakerFlagVariant = name[idx]
+                    self.breakerFlagVariant = idx
                 elif name["name"] == "Name":
-                    self.breakername = name[idx]
+                    self.breakername = idx
                 elif name["name"] == "Flag_Typ":
-                    self.breakerType = name[idx]
+                    self.breakerType = idx
                 elif name["name"] == "Flag_State":
-                    self.breakerState = name[idx]
+                    self.breakerState = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
             for idx, name in enumerate(voltageLevelColumnNames):
                 if name["name"] == "Un":
-                    self.voltageLevelUn = name[idx]
+                    self.voltageLevelUn = idx
 
             self.totalLines = 0
 
@@ -501,75 +501,75 @@ class ReadLines:
             elementColumnNames = self.read_element_column_names(conn)
             for idx, name in enumerate(elementColumnNames):
                 if name["name"] == "Element_ID":
-                    self.elementID = name[idx]
+                    self.elementID = idx
                 elif name["name"] == "Type":
-                    self.elementType = name[idx]
+                    self.elementType = idx
                 elif name["name"] == "Name":
-                    self.elementName = name[idx]
+                    self.elementName = idx
                 elif name["name"] == "Flag_State":
-                    self.elementFlagState = name[idx]
+                    self.elementFlagState = idx
                 elif name["name"] == "VoltLevel_ID":
-                    self.elementVoltLevel = name[idx]
+                    self.elementVoltLevel = idx
             terminalColumnNames = self.read_terminal_column_names(conn)
             for idx, name in enumerate(terminalColumnNames):
                 if name["name"] == "TerminalNo":
-                    self.terminalNo = name[idx]
+                    self.terminalNo = idx
                 elif name["name"] == "Node_ID":
-                    self.terminalID = name[idx]
+                    self.terminalID = idx
                 elif name["name"] == "Terminal_ID":
-                    self.terminalIDNumber = name[idx]
+                    self.terminalIDNumber = idx
                 elif name["name"] == "Element_ID":
-                    self.terminalElementID = name[idx]
+                    self.terminalElementID = idx
                 elif name["name"] == "Flag_Terminal":
-                    self.terminalFlagTerminal = name[idx]
+                    self.terminalFlagTerminal = idx
             lineColumnNames = self.read_line_column_names(conn)
             for idx, name in enumerate(lineColumnNames):
                 if name["name"] == "Element_ID":
-                    self.lineID = name[idx]
+                    self.lineID = idx
                 elif name["name"] == "Flag_Variant":
-                    self.lineFlagVariant = name[idx]
+                    self.lineFlagVariant = idx
                 elif name["name"] == "l":
-                    self.lineLength = name[idx]
+                    self.lineLength = idx
                 elif name["name"] == "Flag_LineTyp":
-                    self.lineType = name[idx]
+                    self.lineType = idx
                 elif name["name"] == "q":
-                    self.lineCrossSection = name[idx]
+                    self.lineCrossSection = idx
                 elif name["name"] == "r0":
-                    self.lineR0 = name[idx]
+                    self.lineR0 = idx
                 elif name["name"] == "x0":
-                    self.lineX0 = name[idx]
+                    self.lineX0 = idx
                 elif name["name"] == "r":
-                    self.lineR1 = name[idx]
+                    self.lineR1 = idx
                 elif name["name"] == "x":
-                    self.lineX1 = name[idx]
+                    self.lineX1 = idx
                 elif name["name"] == "c":
-                    self.lineC1 = name[idx]
+                    self.lineC1 = idx
                 elif name["name"] == "c0":
-                    self.lineC0 = name[idx]
+                    self.lineC0 = idx
                 elif name["name"] == "Un":
-                    self.lineRatedVoltage = name[idx]
+                    self.lineRatedVoltage = idx
                 elif name["name"] == "LineInfo":
-                    self.lineInfo = name[idx]
+                    self.lineInfo = idx
 
             breakerColumnNames = self.read_breaker_column_names(conn)
             for idx, name in enumerate(breakerColumnNames):
                 if name["name"] == "Terminal_ID":
-                    self.breakerTerminalID = name[idx]
+                    self.breakerTerminalID = idx
                 elif name["name"] == "Breaker_ID":
-                    self.breakerID = name[idx]
+                    self.breakerID = idx
                 elif name["name"] == "Flag_Variant":
-                    self.breakerFlagVariant = name[idx]
+                    self.breakerFlagVariant = idx
                 elif name["name"] == "Name":
-                    self.breakername = name[idx]
+                    self.breakername = idx
                 elif name["name"] == "Flag_Typ":
-                    self.breakerType = name[idx]
+                    self.breakerType = idx
                 elif name["name"] == "Flag_State":
-                    self.breakerState = name[idx]
+                    self.breakerState = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
             for idx, name in enumerate(voltageLevelColumnNames):
                 if name["name"] == "Un":
-                    self.voltageLevelUn = name[idx]
+                    self.voltageLevelUn = idx
 
             self.totalLines = 0
             threads = list()

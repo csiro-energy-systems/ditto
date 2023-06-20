@@ -37,6 +37,8 @@ xlrd = { optional = true, version = "*" }
 xlsxwriter = { optional = true, version = "*" }
 sqlalchemy = {version = "^2.0.16", optional = true}
 sqlalchemy-access = {version = "^2.0.2", optional = true}
+matplotlib = { version = "^3.7.1", optional = true }
+pyvis = "^0.1.8"
 
 [tool.poetry.dev-dependencies]
 black = "*"
@@ -51,6 +53,7 @@ cyme = ["numpy"]
 gridlabd = ["croniter", "numpy"]
 ephasor = ["numpy", "pandas"]
 sincal = ["sqlalchemy", "sqlalchemy-access"]
+vis = ["matplotlib", "pyvis"]
 all = ["croniter", "lxml", "numpy", "opendssdirect-py", "pandas", "pandas-access", "scipy", "xlrd", "xlsxwriter", "sqlalchemy"]
 extras = ["croniter", "lxml", "numpy", "opendssdirect-py", "pandas", "pandas-access", "scipy", "xlrd", "xlsxwriter"]
 opendss = ["OpenDSSDirect.py", "pandas", "numpy"]

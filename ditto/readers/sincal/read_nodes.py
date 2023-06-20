@@ -48,22 +48,22 @@ class ReadNodes:
         with conn:
             rows = self.read_nodes(conn)
             nodeColumnNames = self.read_nodes_column_names(conn)
-            for name in nodeColumnNames:
-                if name[1] == "lat":
-                    self.nodeLat = name[0]
-                elif name[1] == "lon":
-                    self.nodeLon = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.nodeFlagVariant = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.nodeVoltLevel = name[0]
-                elif name[1] == "Name":
-                    self.nodeName = name[0]
+            for idx, name in enumerate(nodeColumnNames):
+                if name["name"] == "lat":
+                    self.nodeLat = idx
+                elif name["name"] == "lon":
+                    self.nodeLon = idx
+                elif name["name"] == "Flag_Variant":
+                    self.nodeFlagVariant = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.nodeVoltLevel = idx
+                elif name["name"] == "Name":
+                    self.nodeName = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.totalNodes = 0
 
@@ -138,20 +138,20 @@ class ReadNodes:
         with conn:
             rows = self.read_lineNode(conn, bus)
             nodeColumnNames = self.read_nodes_column_names(conn)
-            for name in nodeColumnNames:
-                if name[1] == "lat":
-                    self.nodeLat = name[0]
-                elif name[1] == "lon":
-                    self.nodeLon = name[0]
-                elif name[1] == "Flag_Variant":
-                    self.nodeFlagVariant = name[0]
-                elif name[1] == "VoltLevel_ID":
-                    self.nodeVoltLevel = name[0]
+            for idx, name in enumerate(nodeColumnNames):
+                if name["name"] == "lat":
+                    self.nodeLat = idx
+                elif name["name"] == "lon":
+                    self.nodeLon = idx
+                elif name["name"] == "Flag_Variant":
+                    self.nodeFlagVariant = idx
+                elif name["name"] == "VoltLevel_ID":
+                    self.nodeVoltLevel = idx
 
             voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for name in voltageLevelColumnNames:
-                if name[1] == "Un":
-                    self.voltageLevelUn = name[0]
+            for idx, name in enumerate(voltageLevelColumnNames):
+                if name["name"] == "Un":
+                    self.voltageLevelUn = idx
 
             self.totalNodes = 0
             for row in rows:
