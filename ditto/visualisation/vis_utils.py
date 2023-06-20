@@ -514,12 +514,13 @@ def get_line_types(graph, line_unique_features):
         line_types.append(str(feats))
 
     """ Build a table of line types and their properties, mostly for debugging purposes """
-    ltypes = pd.DataFrame()
+    ltypes = []
     for lt in type_to_edge.keys():
         edges = type_to_edge[lt]
         subgraph_props = get_node_edge_properties(edges, graph, line_unique_features)
-        ltypes = ltypes.append(pd.DataFrame(index=[lt], data=subgraph_props))
-        ltypes = ltypes.sort_values('R1', ascending=True)
+        ltypes.append(pd.DataFrame(index=[lt], data=subgraph_props))
+    ltypes = pd.concat(ltypes)
+    ltypes = ltypes.sort_values('R1', ascending=True)
     return type_to_edge, ltypes
 
 

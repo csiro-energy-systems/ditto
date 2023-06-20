@@ -35,10 +35,19 @@ class Reader(AbstractLVReader, ABC):
 
     """
     format_name = 'sincal'
+    conn = None
 
-    def create_connection(self, db_file: str) -> sa.engine.Engine:
-        """ create a database connection to the SQLite database
-            specified by the db_file
+    def get_conn(self):
+        """
+        Lazily creates a database connection to `self.input_file`
+        TODO use a connection pool and read tables in parallel
+        """
+        if self.conn is None:
+            self.conn = self._create_connection(self.input_file)
+        return self.conn
+
+    def _create_connection(self, db_file: str) -> sa.engine.Engine:
+        """ create a database connection to the SQLite database specified by the db_file
         :param db_file: database file - can be an sqllite (.db) file or an MS Access (.mdb) file
         :return: Connection object or None
         """
@@ -48,10 +57,6 @@ class Reader(AbstractLVReader, ABC):
 
             try:
                 engine = create_engine(f'sqlite:///{db_file}', echo=False)
-                # conn = sqlite3.connect(db_file)
-                # conn.execute("PRAGMA table_info(Element)").fetchall()
-                # >>> [(0, 'Element_ID', 'INTEGER', 1, None, 0), (1, 'VoltLevel_ID', 'INTEGER', 0, None, 0)
-
             except Error as e:
                 self.logger.debug(f'Error creating sqlite connection to {db_file}', exc_info=1)
 
@@ -720,16 +725,11 @@ class Reader(AbstractLVReader, ABC):
         :param merge: (-merge): Determines whether contiguous Lines with similar properties are merged into a single longer line.
         '''
         self.logger = logging.getLogger(__name__)
-        self.input_file = kwargs.get("input_file", "./input.glm")
-
+        self.input_file = kwargs.get("input_file", "./database.db")
         self.filter = kwargs.get("filter")
-
         self.transformer = kwargs.get("transformer")
-
         self.merge = kwargs.get("merge")
-
         self.separate = kwargs.get("separate")
-
         super(Reader, self).__init__(**kwargs)
 
 # if __name__ == '__main__':

@@ -44,33 +44,33 @@ class ReadNodes:
         self.logger.info(f"Thread {__name__} starting")
         # self.logger.debug("start node")
         database = self.input_file
-        conn = self.create_connection(database)
-        with conn:
-            rows = self.read_nodes(conn)
-            nodeColumnNames = self.read_nodes_column_names(conn)
-            for idx, name in enumerate(nodeColumnNames):
-                if name["name"] == "lat":
-                    self.nodeLat = idx
-                elif name["name"] == "lon":
-                    self.nodeLon = idx
-                elif name["name"] == "Flag_Variant":
-                    self.nodeFlagVariant = idx
-                elif name["name"] == "VoltLevel_ID":
-                    self.nodeVoltLevel = idx
-                elif name["name"] == "Name":
-                    self.nodeName = idx
+        conn = self.get_conn()
 
-            voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for idx, name in enumerate(voltageLevelColumnNames):
-                if name["name"] == "Un":
-                    self.voltageLevelUn = idx
+        rows = self.read_nodes(conn)
+        nodeColumnNames = self.read_nodes_column_names(conn)
+        for idx, name in enumerate(nodeColumnNames):
+            if name["name"] == "lat":
+                self.nodeLat = idx
+            elif name["name"] == "lon":
+                self.nodeLon = idx
+            elif name["name"] == "Flag_Variant":
+                self.nodeFlagVariant = idx
+            elif name["name"] == "VoltLevel_ID":
+                self.nodeVoltLevel = idx
+            elif name["name"] == "Name":
+                self.nodeName = idx
 
-            self.totalNodes = 0
+        voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
+        for idx, name in enumerate(voltageLevelColumnNames):
+            if name["name"] == "Un":
+                self.voltageLevelUn = idx
 
-            from tqdm import tqdm
-            for row in tqdm(rows, desc='Reading nodes', disable=not self.show_progress):
-                self.totalNodes = self.totalNodes + 1
-                ReadNodes.parse_node(self,row,model)
+        self.totalNodes = 0
+
+        from tqdm import tqdm
+        for row in tqdm(rows, desc='Reading nodes', disable=not self.show_progress):
+            self.totalNodes = self.totalNodes + 1
+            ReadNodes.parse_node(self,row,model)
 
         self.logger.debug(f"Thread {__name__} finishing")
 
@@ -79,53 +79,53 @@ class ReadNodes:
         current = self.totalNodes
         self.logger.debug(f"Thread {__name__} starting %s", self.totalNodes)
         database = self.input_file
-        conn = self.create_connection(database)
+        conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
             voltageLevel = 35
         elif self.filter == "LV":
             voltageLevel = 1
-        with conn:
-            if row[self.nodeFlagVariant] == 1:
-                voltLevel = self.read_voltageLevel(conn, row[self.nodeVoltLevel])[0]
-                if voltLevel[self.voltageLevelUn] < voltageLevel:
-                    node = Node(model)
-                    graphicNode = self.read_graphicNode(conn, row[0])[0]
-                    self.busName = row[4]
-                    node.name = str(row[0])
-                    self.logger.debug('Node name: ' + node.name)
-                    node.nominal_voltage = row[29]
-                    phases = row[31]
-                    if phases == 1:
-                        node.phases.append("A")
-                    elif phases == 2:
-                        node.phases.append("B")
-                    elif phases == 3:
-                        node.phases.append("C")
-                    elif phases == 4:
-                        node.phases.append("A")
-                        node.phases.append("B")
-                    elif phases == 5:
-                        node.phases.append("B")
-                        node.phases.append("C")
-                    elif phases == 6:
-                        node.phases.append("A")
-                        node.phases.append("C")
-                    elif phases == 7:
-                        node.phases.append("A")
-                        node.phases.append("B")
-                        node.phases.append("C")
-                    elif phases == 8:
-                        node.phases.append("N")
-                    # self.logger.debug(node.phases)
-                    # Set the coordinates
-                    position = Position(model)
-                    position.long = row[self.nodeLon]  # graphicNode[13]
-                    position.lat = row[self.nodeLat]  # graphicNode[14]
-                    position.x = graphicNode[13]
-                    position.y = graphicNode[14]
-                    position.elevation = 0
-                    node.positions.append(position)
+
+        if row[self.nodeFlagVariant] == 1:
+            voltLevel = self.read_voltageLevel(conn, row[self.nodeVoltLevel])[0]
+            if voltLevel[self.voltageLevelUn] < voltageLevel:
+                node = Node(model)
+                graphicNode = self.read_graphicNode(conn, row[0])[0]
+                self.busName = row[4]
+                node.name = str(row[0])
+                self.logger.debug('Node name: ' + node.name)
+                node.nominal_voltage = row[29]
+                phases = row[31]
+                if phases == 1:
+                    node.phases.append("A")
+                elif phases == 2:
+                    node.phases.append("B")
+                elif phases == 3:
+                    node.phases.append("C")
+                elif phases == 4:
+                    node.phases.append("A")
+                    node.phases.append("B")
+                elif phases == 5:
+                    node.phases.append("B")
+                    node.phases.append("C")
+                elif phases == 6:
+                    node.phases.append("A")
+                    node.phases.append("C")
+                elif phases == 7:
+                    node.phases.append("A")
+                    node.phases.append("B")
+                    node.phases.append("C")
+                elif phases == 8:
+                    node.phases.append("N")
+                # self.logger.debug(node.phases)
+                # Set the coordinates
+                position = Position(model)
+                position.long = row[self.nodeLon]  # graphicNode[13]
+                position.lat = row[self.nodeLat]  # graphicNode[14]
+                position.x = graphicNode[13]
+                position.y = graphicNode[14]
+                position.elevation = 0
+                node.positions.append(position)
 
         self.logger.debug(f"Thread {__name__} finishing %s", current)
 
@@ -134,29 +134,29 @@ class ReadNodes:
         self.logger.info(f"Thread {__name__} starting")
         # self.logger.debug("start node")
         database = self.input_file
-        conn = self.create_connection(database)
-        with conn:
-            rows = self.read_lineNode(conn, bus)
-            nodeColumnNames = self.read_nodes_column_names(conn)
-            for idx, name in enumerate(nodeColumnNames):
-                if name["name"] == "lat":
-                    self.nodeLat = idx
-                elif name["name"] == "lon":
-                    self.nodeLon = idx
-                elif name["name"] == "Flag_Variant":
-                    self.nodeFlagVariant = idx
-                elif name["name"] == "VoltLevel_ID":
-                    self.nodeVoltLevel = idx
+        conn = self.get_conn()
 
-            voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for idx, name in enumerate(voltageLevelColumnNames):
-                if name["name"] == "Un":
-                    self.voltageLevelUn = idx
+        rows = self.read_lineNode(conn, bus)
+        nodeColumnNames = self.read_nodes_column_names(conn)
+        for idx, name in enumerate(nodeColumnNames):
+            if name["name"] == "lat":
+                self.nodeLat = idx
+            elif name["name"] == "lon":
+                self.nodeLon = idx
+            elif name["name"] == "Flag_Variant":
+                self.nodeFlagVariant = idx
+            elif name["name"] == "VoltLevel_ID":
+                self.nodeVoltLevel = idx
 
-            self.totalNodes = 0
-            for row in rows:
-                self.totalNodes = self.totalNodes + 1
-                ReadNodes.parse_node(self, row, model)
+        voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
+        for idx, name in enumerate(voltageLevelColumnNames):
+            if name["name"] == "Un":
+                self.voltageLevelUn = idx
+
+        self.totalNodes = 0
+        for row in rows:
+            self.totalNodes = self.totalNodes + 1
+            ReadNodes.parse_node(self, row, model)
 
         # self.logger.debug("end node")
         self.logger.debug(f"Thread {__name__} finishing")

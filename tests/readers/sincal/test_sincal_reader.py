@@ -1,34 +1,31 @@
 import collections
-import os
 import sys
 import tempfile
+from logging import getLogger
 from pathlib import Path
 from typing import Union
 
-import numpy as np
 import pytest
-from sqlalchemy import text
+from black import find_project_root
 
 from ditto import Store
 from ditto.readers.sincal.read import Reader
-from ditto.models.power_source import PowerSource
-from logging import getLogger
-
 from ditto.visualisation import vis_utils
 from ditto.visualisation.vis_utils import get_power_sources
 
-logger = getLogger(__name__)
-# set logging level
+logger = getLogger()
 logger.setLevel("INFO")
+
+root_dir = find_project_root('.')[0]
+data_dir = Path(root_dir, "tests/data/")
 
 class TestSincalReader:
 
     # @pytest.mark.skip("Need to find releasable Sincal/Sqllite data to include for this test")
     def test_sincal_sqllite_to_opendss(self):
-        data_dir = Path("tests/data/")
 
         test_networks = {
-            'LVFT-67088': data_dir / "big_cases/sincal/LVFT-67088/67088_files/database.db",
+            'LVFT-Network-K': data_dir / "big_cases/sincal/LVFT-Network-K/database.db",
         }
 
         for network_name, db in test_networks.items():
@@ -49,11 +46,13 @@ class TestSincalReader:
 
     @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Sincal Access DBs currently only supported by sqlalchemy-access on Windows")
     def test_sincal_access_to_opendss(self):
-        data_dir = Path("tests/data/")
 
         test_networks = {
             'NFTS_Representative_19': data_dir / "small_cases/sincal/NFTS_Representative_19/database.mdb",
         }
+
+        mdb_files = list(Path("//fs1-cbr.nexus.csiro.au/{en-energy-sys}/source/DAP-15331 National Feeder Taxonomy Study (NFTS)/DataRelease/FeederModels/Sincal").glob("**/*.mdb"))
+        test_networks = {f.parent.name.replace('_files', ''): f for f in mdb_files}
 
         for network_name, db in test_networks.items():
             output_path = f"{tempfile.gettempdir()}/{network_name}"
@@ -111,5 +110,5 @@ def read_sincal(db_file: Path, single_threaded=True, show_progress=True, separat
 
 
 if __name__ == '__main__':
-    test_sincal_sqllite_to_opendss()
-    # test_sincal_access_to_opendss()
+    # TestSincalReader().test_sincal_sqllite_to_opendss()
+    TestSincalReader().test_sincal_access_to_opendss()

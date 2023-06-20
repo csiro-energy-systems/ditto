@@ -42,49 +42,48 @@ class ReadCapacitors:
     def parse_capacitors(self, model, show_progress=True):
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
-        conn = self.create_connection(database)
-        with conn:
-            elementColumnNames = self.read_element_column_names(conn)
-            for idx, name in enumerate(elementColumnNames):
-                if name["name"] == "Element_ID":
-                    self.elementID = idx
-                elif name["name"] == "Type":
-                    self.elementType = idx
-                elif name["name"] == "Name":
-                    self.elementName = idx
-                elif name["name"] == "VoltLevel_ID":
-                    self.elementVoltLevel = idx
+        conn = self.get_conn()
 
-            terminalColumnNames = self.read_terminal_column_names(conn)
-            for idx, name in enumerate(terminalColumnNames):
-                if name["name"] == "TerminalNo":
-                    self.terminalNo = idx
-                elif name["name"] == "Node_ID":
-                    self.terminalID = idx
-                elif name["name"] == "Flag_Terminal":
-                    self.terminalPhase = idx
+        elementColumnNames = self.read_element_column_names(conn)
+        for idx, name in enumerate(elementColumnNames):
+            if name["name"] == "Element_ID":
+                self.elementID = idx
+            elif name["name"] == "Type":
+                self.elementType = idx
+            elif name["name"] == "Name":
+                self.elementName = idx
+            elif name["name"] == "VoltLevel_ID":
+                self.elementVoltLevel = idx
 
-            shuntCondensatorColumnNames = self.read_shuntCondensator_column_names(conn)
-            for idx, name in enumerate(shuntCondensatorColumnNames):
-                if name["name"] == "Element_ID":
-                    self.shuntCondensatorID = idx
-                elif name["name"] == "Flag_Terminal":
-                    self.shuntCondensatorPhase = idx
-                elif name["name"] == "Sn":
-                    self.shuntCondensatorRatedReactivePower = idx
+        terminalColumnNames = self.read_terminal_column_names(conn)
+        for idx, name in enumerate(terminalColumnNames):
+            if name["name"] == "TerminalNo":
+                self.terminalNo = idx
+            elif name["name"] == "Node_ID":
+                self.terminalID = idx
+            elif name["name"] == "Flag_Terminal":
+                self.terminalPhase = idx
 
-            voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
-            for idx, name in enumerate(voltageLevelColumnNames):
-                if name["name"] == "Un":
-                    self.voltageLevelUn = idx
+        shuntCondensatorColumnNames = self.read_shuntCondensator_column_names(conn)
+        for idx, name in enumerate(shuntCondensatorColumnNames):
+            if name["name"] == "Element_ID":
+                self.shuntCondensatorID = idx
+            elif name["name"] == "Flag_Terminal":
+                self.shuntCondensatorPhase = idx
+            elif name["name"] == "Sn":
+                self.shuntCondensatorRatedReactivePower = idx
 
-            self.totalCapacitors = 0
+        voltageLevelColumnNames = self.read_voltageLevel_column_names(conn)
+        for idx, name in enumerate(voltageLevelColumnNames):
+            if name["name"] == "Un":
+                self.voltageLevelUn = idx
 
-            ShuntCondensators = self.read_shuntCondensators(conn)
-            for shuntCapacitor in tqdm(ShuntCondensators, desc='Reading shunt capacitors', disable=not self.show_progress):
-                self.totalCapacitors = self.totalCapacitors + 1
-                ReadCapacitors.parse_shunt_capacitor(self, shuntCapacitor, model)
+        self.totalCapacitors = 0
+
+        ShuntCondensators = self.read_shuntCondensators(conn)
+        for shuntCapacitor in tqdm(ShuntCondensators, desc='Reading shunt capacitors', disable=not self.show_progress):
+            self.totalCapacitors = self.totalCapacitors + 1
+            ReadCapacitors.parse_shunt_capacitor(self, shuntCapacitor, model)
 
         self.logger.info(f"Thread {__name__} %s: finishing")
 
@@ -94,7 +93,7 @@ class ReadCapacitors:
         self.logger.debug("parse_shunt_capacitor Thread starting %s", self.totalCapacitors)
         # create a database connection
         database = self.input_file
-        conn = self.create_connection(database)
+        conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
             voltageLevel = 35
@@ -102,84 +101,82 @@ class ReadCapacitors:
             voltageLevel = 1
         # self.logger.info(conn)
         # self.logger.info("START PARSING LINES")
-        with conn:
-            element = self.read_element(conn, shuntCapacitor[self.shuntCondensatorID])[
-                0
-            ]
-            # shuntCapacitor = self.read_shuntCondensator(conn, element[0])[0]
-            voltLevel = self.read_voltageLevel(conn, element[self.elementVoltLevel])[0]
-            if voltLevel[self.voltageLevelUn] < voltageLevel:
-                capacitor = Capacitor(model)
-                terminal = self.read_terminal(conn, element[self.elementID])[0]
-                # Set the name
-                capacitor.name = element[self.elementName].replace(" ", "").lower()
-                self.logger.info('Capacitor name: ' + capacitor.name)
-                # Set the connecting element
-                capacitor.connecting_element = str(terminal[self.terminalID])
-                # Reactance
-                # capacitor.reactance = shuntCapacitor[5]
 
-                phase = terminal[self.terminalPhase]
-                phases = list()
-                # self.logger.info(phase)
-                if phase == 1:
-                    phases.append("A")
-                elif phase == 2:
-                    phases.append("B")
-                elif phase == 3:
-                    phases.append("C")
-                elif phase == 4:
-                    phases.append("A")
-                    phases.append("B")
-                elif phase == 5:
-                    phases.append("B")
-                    phases.append("C")
-                elif phase == 6:
-                    phases.append("A")
-                    phases.append("C")
-                elif phase == 7:
-                    phases.append("A")
-                    phases.append("B")
-                    phases.append("C")
-                # Set the nominal voltage
-                # Convert from KV to Volts since DiTTo is in volts
-                capacitor.nominal_voltage = (
-                    voltLevel[self.voltageLevelUn] * 10 ** 3
-                )  # DiTTo in volts
-                if len(phases) == 3:
-                    capacitor.nominal_voltage * math.sqrt(3)
+        element = self.read_element(conn, shuntCapacitor[self.shuntCondensatorID])[0]
+        # shuntCapacitor = self.read_shuntCondensator(conn, element[0])[0]
+        voltLevel = self.read_voltageLevel(conn, element[self.elementVoltLevel])[0]
+        if voltLevel[self.voltageLevelUn] < voltageLevel:
+            capacitor = Capacitor(model)
+            terminal = self.read_terminal(conn, element[self.elementID])[0]
+            # Set the name
+            capacitor.name = element[self.elementName].replace(" ", "").lower()
+            self.logger.info('Capacitor name: ' + capacitor.name)
+            # Set the connecting element
+            capacitor.connecting_element = str(terminal[self.terminalID])
+            # Reactance
+            # capacitor.reactance = shuntCapacitor[5]
 
-                # For each phase...
-                for p in phases:
-                    phaseCapacitor = PhaseCapacitor(model)
-                    phaseCapacitor.phase = p
-                    if p == "A":
-                        phaseCapacitor.var = (
-                            float(
-                                shuntCapacitor[self.shuntCondensatorRatedReactivePower]
-                            )
-                            / len(phases)
-                            * 10 ** 6
-                        )  # Ditto in var
-                    if p == "B":
-                        phaseCapacitor.var = (
-                            float(
-                                shuntCapacitor[self.shuntCondensatorRatedReactivePower]
-                            )
-                            / len(phases)
-                            * 10 ** 6
-                        )  # Ditto in var
-                    if p == "C":
-                        phaseCapacitor.var = (
-                            float(
-                                shuntCapacitor[self.shuntCondensatorRatedReactivePower]
-                            )
-                            / len(phases)
-                            * 10 ** 6
-                        )  # Ditto in var
+            phase = terminal[self.terminalPhase]
+            phases = list()
+            # self.logger.info(phase)
+            if phase == 1:
+                phases.append("A")
+            elif phase == 2:
+                phases.append("B")
+            elif phase == 3:
+                phases.append("C")
+            elif phase == 4:
+                phases.append("A")
+                phases.append("B")
+            elif phase == 5:
+                phases.append("B")
+                phases.append("C")
+            elif phase == 6:
+                phases.append("A")
+                phases.append("C")
+            elif phase == 7:
+                phases.append("A")
+                phases.append("B")
+                phases.append("C")
+            # Set the nominal voltage
+            # Convert from KV to Volts since DiTTo is in volts
+            capacitor.nominal_voltage = (
+                voltLevel[self.voltageLevelUn] * 10 ** 3
+            )  # DiTTo in volts
+            if len(phases) == 3:
+                capacitor.nominal_voltage * math.sqrt(3)
 
-                        # phaseCapacitor.var = (float(shuntCapacitor[self.shuntCondensatorRatedReactivePower]) * math.sqrt(3) * 10 ** 6)  # Ditto in var
+            # For each phase...
+            for p in phases:
+                phaseCapacitor = PhaseCapacitor(model)
+                phaseCapacitor.phase = p
+                if p == "A":
+                    phaseCapacitor.var = (
+                        float(
+                            shuntCapacitor[self.shuntCondensatorRatedReactivePower]
+                        )
+                        / len(phases)
+                        * 10 ** 6
+                    )  # Ditto in var
+                if p == "B":
+                    phaseCapacitor.var = (
+                        float(
+                            shuntCapacitor[self.shuntCondensatorRatedReactivePower]
+                        )
+                        / len(phases)
+                        * 10 ** 6
+                    )  # Ditto in var
+                if p == "C":
+                    phaseCapacitor.var = (
+                        float(
+                            shuntCapacitor[self.shuntCondensatorRatedReactivePower]
+                        )
+                        / len(phases)
+                        * 10 ** 6
+                    )  # Ditto in var
 
-                    # self.logger.info(phaseCapacitor.var)
-                    capacitor.phase_capacitors.append(phaseCapacitor)
-                    self.logger.info(f"Thread {__name__}: finishing")
+                    # phaseCapacitor.var = (float(shuntCapacitor[self.shuntCondensatorRatedReactivePower]) * math.sqrt(3) * 10 ** 6)  # Ditto in var
+
+                # self.logger.info(phaseCapacitor.var)
+                capacitor.phase_capacitors.append(phaseCapacitor)
+                self.logger.info(f"Thread {__name__}: finishing")

@@ -43,72 +43,72 @@ class ReadTransformers:
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
         database = self.input_file
-        conn = self.create_connection(database)
-        with conn:
-            Elements = self.read_elements(conn)
-            TwoWindingTransformers = self.read_twoWindingTransformers(conn)
-            elementColumnNames = self.read_element_column_names(conn)
+        conn = self.get_conn()
 
-            for idx, name in enumerate(elementColumnNames):
-                if name["name"] == "Element_ID":
-                    self.elementID = idx
-                elif name["name"] == "Type":
-                    self.elementType = idx
-                elif name["name"] == "Name":
-                    self.elementName = idx
-                elif name["name"] == "VoltLevel_ID":
-                    self.elementVoltLevel = idx
+        Elements = self.read_elements(conn)
+        TwoWindingTransformers = self.read_twoWindingTransformers(conn)
+        elementColumnNames = self.read_element_column_names(conn)
 
-            terminalColumnNames = self.read_terminal_column_names(conn)
-            for idx, name in enumerate(terminalColumnNames):
-                if name["name"] == "TerminalNo":
-                    self.terminalNo = idx
-                elif name["name"] == "Node_ID":
-                    self.terminalID = idx
-                elif name["name"] == "Flag_Terminal":
-                    self.terminalPhase = idx
+        for idx, name in enumerate(elementColumnNames):
+            if name["name"] == "Element_ID":
+                self.elementID = idx
+            elif name["name"] == "Type":
+                self.elementType = idx
+            elif name["name"] == "Name":
+                self.elementName = idx
+            elif name["name"] == "VoltLevel_ID":
+                self.elementVoltLevel = idx
 
-            twoWindingColumnNames = self.read_twoWinding_column_names(conn)
-            for idx, name in enumerate(twoWindingColumnNames):
-                if name["name"] == "Element_ID":
-                    self.twoWindingID = idx
-                elif name["name"] == "Flag_Variant":
-                    self.twoWindingFlagVariant = idx
-                elif name["name"] == "Un1":
-                    self.twoWindingUn1 = idx
-                elif name["name"] == "Un2":
-                    self.twoWindingUn2 = idx
-                elif name["name"] == "Sn":
-                    self.twoWindingSn = idx
-                elif name["name"] == "VecGrp":
-                    self.twoWindingVecGrp = idx
-                elif name["name"] == "roh1":
-                    self.twoWindingTap1 = idx
-                elif name["name"] == "roh2":
-                    self.twoWindingTap2 = idx
-                elif name["name"] == "roh3":
-                    self.twoWindingTap3 = idx
-                elif name["name"] == "rohu":
-                    self.twoWindingHighStep = idx
-                elif name["name"] == "rohl":
-                    self.twoWindingLowStep = idx
-                elif name["name"] == "rohm":
-                    self.twoWindingSetPoint = idx
-                elif name["name"] == "Flag_Z0_Input":
-                    self.twoWindingZ0Flag = idx
-                elif name["name"] == "X0":
-                    self.twoWindingX0 = idx
-                elif name["name"] == "uk":  # short circuit voltage
-                    self.twoWindinguk = idx
-                elif name["name"] == "ur":  # short circuit voltage  ohmic part
-                    self.twoWindingur = idx
-                elif name["name"] == "Vfe":
-                    self.twoWindingVfe = idx
+        terminalColumnNames = self.read_terminal_column_names(conn)
+        for idx, name in enumerate(terminalColumnNames):
+            if name["name"] == "TerminalNo":
+                self.terminalNo = idx
+            elif name["name"] == "Node_ID":
+                self.terminalID = idx
+            elif name["name"] == "Flag_Terminal":
+                self.terminalPhase = idx
 
-            self.totalTwoWinding = 0
-            for twoWinding in tqdm(TwoWindingTransformers, desc='Reading transformers', disable=not self.show_progress):
-                self.totalTwoWinding = self.totalTwoWinding + 1
-                ReadTransformers.parse_twoWindingTransformer(self, twoWinding, model)
+        twoWindingColumnNames = self.read_twoWinding_column_names(conn)
+        for idx, name in enumerate(twoWindingColumnNames):
+            if name["name"] == "Element_ID":
+                self.twoWindingID = idx
+            elif name["name"] == "Flag_Variant":
+                self.twoWindingFlagVariant = idx
+            elif name["name"] == "Un1":
+                self.twoWindingUn1 = idx
+            elif name["name"] == "Un2":
+                self.twoWindingUn2 = idx
+            elif name["name"] == "Sn":
+                self.twoWindingSn = idx
+            elif name["name"] == "VecGrp":
+                self.twoWindingVecGrp = idx
+            elif name["name"] == "roh1":
+                self.twoWindingTap1 = idx
+            elif name["name"] == "roh2":
+                self.twoWindingTap2 = idx
+            elif name["name"] == "roh3":
+                self.twoWindingTap3 = idx
+            elif name["name"] == "rohu":
+                self.twoWindingHighStep = idx
+            elif name["name"] == "rohl":
+                self.twoWindingLowStep = idx
+            elif name["name"] == "rohm":
+                self.twoWindingSetPoint = idx
+            elif name["name"] == "Flag_Z0_Input":
+                self.twoWindingZ0Flag = idx
+            elif name["name"] == "X0":
+                self.twoWindingX0 = idx
+            elif name["name"] == "uk":  # short circuit voltage
+                self.twoWindinguk = idx
+            elif name["name"] == "ur":  # short circuit voltage  ohmic part
+                self.twoWindingur = idx
+            elif name["name"] == "Vfe":
+                self.twoWindingVfe = idx
+
+        self.totalTwoWinding = 0
+        for twoWinding in tqdm(TwoWindingTransformers, desc='Reading transformers', disable=not self.show_progress):
+            self.totalTwoWinding = self.totalTwoWinding + 1
+            ReadTransformers.parse_twoWindingTransformer(self, twoWinding, model)
 
         self.logger.debug(f"Thread {__name__} finishing")
 
@@ -117,7 +117,7 @@ class ReadTransformers:
         current = self.totalTwoWinding
         self.logger.debug(f"Thread {__name__} starting %s", self.totalTwoWinding)
         database = self.input_file
-        conn = self.create_connection(database)
+        conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
             voltageLevel = 35
@@ -322,80 +322,80 @@ class ReadTransformers:
     def parse_transformer(self, model, bus):
         self.logger.info(f"Thread {__name__} starting")
         database = self.input_file
-        conn = self.create_connection(database)
-        with conn:
-            elements = self.read_lineTerminalsByNodeID(conn, bus)
-            elementColumnNames = self.read_element_column_names(conn)
-            for idx, name in enumerate(elementColumnNames):
-                if name["name"] == "Element_ID":
-                    self.elementID = idx
-                elif name["name"] == "Type":
-                    self.elementType = idx
-                elif name["name"] == "Name":
-                    self.elementName = idx
-                elif name["name"] == "VoltLevel_ID":
-                    self.elementVoltLevel = idx
+        conn = self.get_conn()
 
-            terminalColumnNames = self.read_terminal_column_names(conn)
-            for idx, name in enumerate(terminalColumnNames):
-                if name["name"] == "TerminalNo":
-                    self.terminalNo = idx
-                elif name["name"] == "Node_ID":
-                    self.terminalID = idx
-                elif name["name"] == "Flag_Terminal":
-                    self.terminalPhase = idx
-                elif name["name"] == "Element_ID":
-                    self.terminalElementID = idx
+        elements = self.read_lineTerminalsByNodeID(conn, bus)
+        elementColumnNames = self.read_element_column_names(conn)
+        for idx, name in enumerate(elementColumnNames):
+            if name["name"] == "Element_ID":
+                self.elementID = idx
+            elif name["name"] == "Type":
+                self.elementType = idx
+            elif name["name"] == "Name":
+                self.elementName = idx
+            elif name["name"] == "VoltLevel_ID":
+                self.elementVoltLevel = idx
 
-            twoWindingColumnNames = self.read_twoWinding_column_names(conn)
-            for idx, name in enumerate(twoWindingColumnNames):
-                if name["name"] == "Element_ID":
-                    self.twoWindingID = idx
-                elif name["name"] == "Flag_Variant":
-                    self.twoWindingFlagVariant = idx
-                elif name["name"] == "Un1":
-                    self.twoWindingUn1 = idx
-                elif name["name"] == "Un2":
-                    self.twoWindingUn2 = idx
-                elif name["name"] == "Sn":
-                    self.twoWindingSn = idx
-                elif name["name"] == "VecGrp":
-                    self.twoWindingVecGrp = idx
-                elif name["name"] == "roh1":
-                    self.twoWindingTap1 = idx
-                elif name["name"] == "roh2":
-                    self.twoWindingTap2 = idx
-                elif name["name"] == "roh3":
-                    self.twoWindingTap3 = idx
-                elif name["name"] == "rohu":
-                    self.twoWindingHighStep = idx
-                elif name["name"] == "rohl":
-                    self.twoWindingLowStep = idx
-                elif name["name"] == "rohm":
-                    self.twoWindingSetPoint = idx
-                elif name["name"] == "Flag_Z0_Input":
-                    self.twoWindingZ0Flag = idx
-                elif name["name"] == "X0":
-                    self.twoWindingX0 = idx
-                elif name["name"] == "uk":  # short circuit voltage
-                    self.twoWindinguk = idx
-                elif name["name"] == "ur":  # short circuit voltage  ohmic part
-                    self.twoWindingur = idx
-                elif name["name"] == "Vfe":
-                    self.twoWindingVfe = idx
+        terminalColumnNames = self.read_terminal_column_names(conn)
+        for idx, name in enumerate(terminalColumnNames):
+            if name["name"] == "TerminalNo":
+                self.terminalNo = idx
+            elif name["name"] == "Node_ID":
+                self.terminalID = idx
+            elif name["name"] == "Flag_Terminal":
+                self.terminalPhase = idx
+            elif name["name"] == "Element_ID":
+                self.terminalElementID = idx
 
-            self.totalTwoWinding = 0
-            for element in elements:
-                try:
-                    twoWinding = self.read_twoWindingTransformer(
-                        conn, element[self.terminalElementID]
-                    )[0]
-                    self.totalTwoWinding = self.totalTwoWinding + 1
-                    ReadTransformers.parse_twoWindingTransformer(
-                        self, twoWinding, model,
-                    )
+        twoWindingColumnNames = self.read_twoWinding_column_names(conn)
+        for idx, name in enumerate(twoWindingColumnNames):
+            if name["name"] == "Element_ID":
+                self.twoWindingID = idx
+            elif name["name"] == "Flag_Variant":
+                self.twoWindingFlagVariant = idx
+            elif name["name"] == "Un1":
+                self.twoWindingUn1 = idx
+            elif name["name"] == "Un2":
+                self.twoWindingUn2 = idx
+            elif name["name"] == "Sn":
+                self.twoWindingSn = idx
+            elif name["name"] == "VecGrp":
+                self.twoWindingVecGrp = idx
+            elif name["name"] == "roh1":
+                self.twoWindingTap1 = idx
+            elif name["name"] == "roh2":
+                self.twoWindingTap2 = idx
+            elif name["name"] == "roh3":
+                self.twoWindingTap3 = idx
+            elif name["name"] == "rohu":
+                self.twoWindingHighStep = idx
+            elif name["name"] == "rohl":
+                self.twoWindingLowStep = idx
+            elif name["name"] == "rohm":
+                self.twoWindingSetPoint = idx
+            elif name["name"] == "Flag_Z0_Input":
+                self.twoWindingZ0Flag = idx
+            elif name["name"] == "X0":
+                self.twoWindingX0 = idx
+            elif name["name"] == "uk":  # short circuit voltage
+                self.twoWindinguk = idx
+            elif name["name"] == "ur":  # short circuit voltage  ohmic part
+                self.twoWindingur = idx
+            elif name["name"] == "Vfe":
+                self.twoWindingVfe = idx
 
-                except:
-                    self.logger.debug("not a transformer")
+        self.totalTwoWinding = 0
+        for element in elements:
+            try:
+                twoWinding = self.read_twoWindingTransformer(
+                    conn, element[self.terminalElementID]
+                )[0]
+                self.totalTwoWinding = self.totalTwoWinding + 1
+                ReadTransformers.parse_twoWindingTransformer(
+                    self, twoWinding, model,
+                )
+
+            except:
+                self.logger.debug("not a transformer")
 
         self.logger.debug(f"Thread {__name__} finishing")
