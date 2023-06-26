@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division, print_function
+
 import collections
 import sys
 import tempfile
@@ -5,8 +7,13 @@ from logging import getLogger
 from pathlib import Path
 from typing import Union
 
+import opendssdirect as dss
+import pandas as pd
 import pytest
 from black import find_project_root
+from opendssdirect import _utils
+from opendssdirect._utils import get_string
+from opendssdirect.utils import run_command
 
 from ditto import Store
 from ditto.readers.sincal.read import Reader
@@ -39,40 +46,41 @@ class TestSincalReader:
                     if len(power_source_names) > 0:
                         for idx, sourcebus in enumerate(power_source_names):
                             dss_path = Path(f"{output_path}/{idx}")
-                            print(f"Parsed network={network_name}, Index={idx}, Source={sourcebus}")
                             store_to_dss(store, dss_path)
                             assert Path(f"{output_path}/{idx}/Master.dss").exists(), "DSS file not found at expected location"
-                    vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engine='pyvis')
+                            logger.info(f"Parsed network={network_name}, Index={idx}, Source={sourcebus}.  Saved to {dss_path}")
+
+                    vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engines=['pyvis', 'plotly', 'networkx'])
 
     @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Sincal Access DBs currently only supported by sqlalchemy-access on Windows")
     def test_sincal_access_to_opendss(self):
-
+        """
+        Reads a Sincal Access DB to a Ditto Store and saves it to a DSS file
+        Note: this currently only works in Windows, due to some native dependencies on the `sqlalchemy-access` library.
+        """
         test_networks = {
             'NFTS_Representative_19': data_dir / "small_cases/sincal/NFTS_Representative_19/database.mdb",
         }
 
-        mdb_files = list(Path("//fs1-cbr.nexus.csiro.au/{en-energy-sys}/source/DAP-15331 National Feeder Taxonomy Study (NFTS)/DataRelease/FeederModels/Sincal").glob("**/*.mdb"))
-        test_networks = {f.parent.name.replace('_files', ''): f for f in mdb_files}
+        # Uncomment to convert data from the National Feeder Taxonomy Study (NFTS) - see https://doi.org/10.4225/08/5631B1DF6F1A0
+        # mdb_files = list(Path("path/to/DAP-15331 National Feeder Taxonomy Study (NFTS)/DataRelease/FeederModels/Sincal").glob("**/*.mdb"))
+        # test_networks = {f.parent.name.replace('_files', ''): f for f in mdb_files}
 
         for network_name, db in test_networks.items():
+            logger.info(f"Reading network: {network_name} from {db}")
             output_path = f"{tempfile.gettempdir()}/{network_name}"
 
             store_list: list = read_sincal(db, single_threaded=True, show_progress=True, separate_lv_networks=False, lv_filter='MV', merge_identical_lines=True, keep_transformers=True)
-            if store_list is not None:
-                for store in store_list:
-                    power_source_names = get_power_sources(store)
+            store = store_list[0]
+            sourcebus = get_power_sources(store)[0]
 
-                    if len(power_source_names) > 0:
-                        for idx, sourcebus in enumerate(power_source_names):
-                            dss_path = Path(f"{output_path}/{idx}")
-                            print(f"Parsed network={network_name}, Index={idx}, Source={sourcebus}")
-                            store_to_dss(store, dss_path)
-                            assert Path(f"{output_path}/{idx}/Master.dss").exists(), "DSS file not found at expected location"
-                    vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engine='pyvis')
+            vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={str(sourcebus).strip()}', Path(f"{output_path}"), engines=['pyvis', 'plotly', 'networkx'], show_plot=False)
+            store_to_dss(store, output_path)
+
+            assert Path(f"{output_path}/Master.dss").exists(), "DSS file not found at expected location"
 
 
-
-def store_to_dss(store: Store, out_dir: Union[str,Path]):
+def store_to_dss(store: Store, out_dir: Union[str, Path]):
     """ Writes a ditto model to a DSS format """
     from ditto.writers.opendss.write import Writer
     Writer(output_path=f"{out_dir}", log_file=f"{out_dir}/conversion.log").write(store)
@@ -108,7 +116,6 @@ def read_sincal(db_file: Path, single_threaded=True, show_progress=True, separat
 
     return models
 
-
 if __name__ == '__main__':
-    # TestSincalReader().test_sincal_sqllite_to_opendss()
-    TestSincalReader().test_sincal_access_to_opendss()
+    TestSincalReader().test_sincal_sqllite_to_opendss()
+    # TestSincalReader().test_sincal_access_to_opendss()
