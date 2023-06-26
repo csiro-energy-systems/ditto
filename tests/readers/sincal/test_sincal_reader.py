@@ -28,7 +28,7 @@ data_dir = Path(root_dir, "tests/data/")
 
 class TestSincalReader:
 
-    # @pytest.mark.skip("Need to find releasable Sincal/Sqllite data to include for this test")
+    @pytest.mark.skip("Need to confirm releasable Sincal/Sqlite data to include for this test")
     def test_sincal_sqllite_to_opendss(self):
 
         test_networks = {
