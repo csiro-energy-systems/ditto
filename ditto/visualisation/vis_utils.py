@@ -83,7 +83,7 @@ def plot_network(
         out_dir: Path = None,
         feeder_subgraphs=None,
         feeder_head_node=None,
-        engines: list[str] = ['pyvis'],
+        engines: list = ['pyvis'],
         line_unique_features=['R1', 'X1', 'line_type', 'nominal_voltage', 'nameclass'],
         show_plot=False):
     """

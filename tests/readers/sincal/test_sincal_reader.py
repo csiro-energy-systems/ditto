@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import collections
+import os
 import sys
 import tempfile
 from logging import getLogger
@@ -52,7 +53,7 @@ class TestSincalReader:
 
                     vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engines=['pyvis', 'plotly', 'networkx'])
 
-    @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Sincal Access DBs currently only supported by sqlalchemy-access on Windows")
+    @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="No ODBC driver available in Github CI environment")
     def test_sincal_access_to_opendss(self):
         """
         Reads a Sincal Access DB to a Ditto Store and saves it to a DSS file
