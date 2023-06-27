@@ -29,8 +29,11 @@ data_dir = Path(root_dir, "tests/data/")
 
 class TestSincalReader:
 
-    @pytest.mark.skip("Need to confirm releasable Sincal/Sqlite data to include for this test")
     def test_sincal_sqllite_to_opendss(self):
+        """
+        Reads a Sincal SQLite DB to a Ditto Store and saves it to a DSS file
+        Test data is a Sincal version of the DSS files available here: https://github.com/csiro-energy-systems/RepresentativeLVNetworks
+        """
 
         test_networks = {
             'LVFT-Network-K': data_dir / "big_cases/sincal/LVFT-Network-K/database.db",
