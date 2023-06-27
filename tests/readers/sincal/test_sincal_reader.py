@@ -56,7 +56,7 @@ class TestSincalReader:
 
                     vis_utils.plot_network(store, sourcebus, f'Network={network_name}, Source={sourcebus}', Path(f"{output_path}/{network_name}"), engines=['pyvis', 'plotly', 'networkx'])
 
-    @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="No ODBC driver available in Github CI environment")
+    @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true" or not sys.platform.startswith("win"), reason="No Access ODBC driver available in Github CI or non-Windows environment")
     def test_sincal_access_to_opendss(self):
         """
         Reads a Sincal Access DB to a Ditto Store and saves it to a DSS file

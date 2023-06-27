@@ -32,9 +32,12 @@ jobs:
         virtualenvs-in-project: true
 
     - name: Install dependencies
-      run: |
-        poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
-        poetry install --all-extras
+      uses: nick-fields/retry@v2
+      with:
+        max_attempts: 2 # workarond for windows matrix builds occasionally failing with 'file because it is being used by another process'
+        command: |
+          poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
+          poetry install --all-extras
 
     - name: run pytests & coverage report
       run: poetry run pytest -vvv --cov=./ --cov-report=xml:unit.coverage.xml
