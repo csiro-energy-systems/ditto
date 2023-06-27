@@ -34,6 +34,7 @@ jobs:
     - name: Install dependencies
       uses: nick-fields/retry@v2
       with:
+        timeout_minutes: 5
         max_attempts: 2 # workarond for windows matrix builds occasionally failing with 'file because it is being used by another process'
         command: |
           poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
