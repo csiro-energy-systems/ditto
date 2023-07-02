@@ -1,38 +1,15 @@
-from __future__ import absolute_import, division, print_function
-from builtins import super, range, zip, round, map
 import logging
 import math
-import sys
-import os
-import json
-import cmath
-import sqlite3
-from sqlite3 import Error
-import math
-import numpy as np
-import threading
-from tqdm import tqdm
-logger = logging.getLogger(__name__)
 
-from ditto.readers.abstract_reader import AbstractReader
-from ditto.store import Store
-from ditto.models.node import Node
-from ditto.models.line import Line
-from ditto.models.load import Load
-from ditto.models.phase_load import PhaseLoad
-from ditto.models.position import Position
-from ditto.models.power_source import PowerSource
+from tqdm import tqdm
+
 from ditto.models.powertransformer import PowerTransformer
 from ditto.models.winding import Winding
 from ditto.models.phase_winding import PhaseWinding
 from ditto.models.regulator import Regulator
-from ditto.models.wire import Wire
-from ditto.models.capacitor import Capacitor
-from ditto.models.phase_capacitor import PhaseCapacitor
-from ditto.models.reactor import Reactor
-from ditto.models.phase_reactor import PhaseReactor
-from ditto.models.photovoltaic import Photovoltaic
 from ditto.readers.sincal.exception_logger import log_exceptions
+
+logger = logging.getLogger(__name__)
 
 
 class ReadTransformers:
@@ -42,10 +19,9 @@ class ReadTransformers:
     def parse_transformers(self, model, show_progress=True):
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
         conn = self.get_conn()
 
-        Elements = self.read_elements(conn)
+        self.read_elements(conn)
         TwoWindingTransformers = self.read_twoWindingTransformers(conn)
         elementColumnNames = self.read_element_column_names(conn)
 
@@ -106,7 +82,11 @@ class ReadTransformers:
                 self.twoWindingVfe = idx
 
         self.totalTwoWinding = 0
-        for twoWinding in tqdm(TwoWindingTransformers, desc='Reading transformers', disable=not self.show_progress):
+        for twoWinding in tqdm(
+            TwoWindingTransformers,
+            desc="Reading transformers",
+            disable=not self.show_progress,
+        ):
             self.totalTwoWinding = self.totalTwoWinding + 1
             ReadTransformers.parse_twoWindingTransformer(self, twoWinding, model)
 
@@ -116,7 +96,6 @@ class ReadTransformers:
     def parse_twoWindingTransformer(self, twoWinding, model):
         current = self.totalTwoWinding
         self.logger.debug(f"Thread {__name__} starting %s", self.totalTwoWinding)
-        database = self.input_file
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -127,15 +106,18 @@ class ReadTransformers:
         side1 = "True"
         side2 = "True"
 
-        if self.transformer == True or self.transformer == "True":
-            result = (twoWinding[self.twoWindingUn1] < voltageLevel) or (twoWinding[self.twoWindingUn2] < voltageLevel)
+        if self.transformer is True or self.transformer == "True":
+            result = (twoWinding[self.twoWindingUn1] < voltageLevel) or (
+                twoWinding[self.twoWindingUn2] < voltageLevel
+            )
             side1 = twoWinding[self.twoWindingUn1] < voltageLevel
             side2 = twoWinding[self.twoWindingUn2] < voltageLevel
-        elif self.transformer == False or self.transformer == "False":
-            result = (twoWinding[self.twoWindingUn1] < voltageLevel) and (twoWinding[self.twoWindingUn2] < voltageLevel)
-        ''' Don't parse the transformer if the -transformer flag was False or the lower-voltage side of it is above the voltage specified by the -filter switch level. '''
+        elif self.transformer is False or self.transformer == "False":
+            result = (twoWinding[self.twoWindingUn1] < voltageLevel) and (
+                twoWinding[self.twoWindingUn2] < voltageLevel
+            )
+        """ Don't parse the transformer if the -transformer flag was False or the lower-voltage side of it is above the voltage specified by the -filter switch level. """
         if twoWinding[self.twoWindingFlagVariant] == 1 and result:
-
             element = self.read_element(conn, twoWinding[self.twoWindingID])[0]
             # terminal = self.read_terminal(conn, element[self.elementID])[0]
             # self.logger.debug("Start of Two Winding Transformer")
@@ -151,7 +133,9 @@ class ReadTransformers:
             phase = terminals[0][self.terminalPhase]
             vectorGroup = twoWinding[self.twoWindingVecGrp]
             for winding in range(2):
-                self.logger.debug(f"Vector Group: {self.connectionType(vectorGroup, winding)}, phase: {[phase]}")
+                self.logger.debug(
+                    f"Vector Group: {self.connectionType(vectorGroup, winding)}, phase: {[phase]}"
+                )
                 if self.connectionType(vectorGroup, winding) == "D" and phase <= 3:
                     phase = 4
 
@@ -178,15 +162,15 @@ class ReadTransformers:
                 phases.append("C")
 
             Z12 = (
-                ((twoWinding[self.twoWindingUn1] * 10 ** 3) ** 2)
-                / (twoWinding[self.twoWindingSn] * 10 ** 6)
+                ((twoWinding[self.twoWindingUn1] * 10**3) ** 2)
+                / (twoWinding[self.twoWindingSn] * 10**6)
                 * (twoWinding[self.twoWindingur] / 100)
             )
             # self.logger.debug(Z12)
             transformer.reactances = [Z12]
             transformer.loadloss = (
-                (twoWinding[self.twoWindingVfe] * 10 ** 3)
-                / (twoWinding[self.twoWindingSn] * 10 ** 6)
+                (twoWinding[self.twoWindingVfe] * 10**3)
+                / (twoWinding[self.twoWindingSn] * 10**6)
                 * 100
             )
             YFlag = False
@@ -197,7 +181,9 @@ class ReadTransformers:
                 if winding == 0:
                     vectorGroup = twoWinding[self.twoWindingVecGrp]
                     w.connection_type = self.connectionType(vectorGroup, winding)
-                    self.logger.debug("Transformer connection type: " + w.connection_type)
+                    self.logger.debug(
+                        "Transformer connection type: " + w.connection_type
+                    )
                     if (
                         (self.filter == "LV" or self.filter == "MV")
                         and (phase == 1 or phase == 2 or phase == 3)
@@ -206,22 +192,22 @@ class ReadTransformers:
                         YFlag = True
                         w.nominal_voltage = (
                             round(twoWinding[self.twoWindingUn1] * math.sqrt(3))
-                            * 10 ** 3
+                            * 10**3
                         )
                     else:
-                        w.nominal_voltage = twoWinding[self.twoWindingUn1] * 10 ** 3
-                    w.rated_power = twoWinding[self.twoWindingSn] * 10 ** 6
+                        w.nominal_voltage = twoWinding[self.twoWindingUn1] * 10**3
+                    w.rated_power = twoWinding[self.twoWindingSn] * 10**6
 
                 if winding == 1:
                     if (self.filter == "LV" or self.filter == "MV") and (
                         phase == 1 or phase == 2 or phase == 3
                     ):
                         w.nominal_voltage = (
-                            twoWinding[self.twoWindingUn2] / math.sqrt(3) * 10 ** 3
+                            twoWinding[self.twoWindingUn2] / math.sqrt(3) * 10**3
                         )
                     else:
-                        w.nominal_voltage = twoWinding[self.twoWindingUn2] * 10 ** 3
-                    w.rated_power = twoWinding[self.twoWindingSn] * 10 ** 6
+                        w.nominal_voltage = twoWinding[self.twoWindingUn2] * 10**3
+                    w.rated_power = twoWinding[self.twoWindingSn] * 10**6
                     w.connection_type = self.connectionType(vectorGroup, winding)
                     # self.logger.debug(w.connection_type)
 
@@ -262,7 +248,7 @@ class ReadTransformers:
                     if side1:
                         transformer.from_element = str(terminal[self.terminalID])
                     else:
-                        if (phase == 1 or phase == 2 or phase == 3) and YFlag == True:
+                        if (phase == 1 or phase == 2 or phase == 3) and YFlag is True:
                             transformer.from_element = "sourcebus_" + str(
                                 round(twoWinding[self.twoWindingUn1] * math.sqrt(3))
                                 * 1000
@@ -321,7 +307,6 @@ class ReadTransformers:
     @log_exceptions
     def parse_transformer(self, model, bus):
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
         conn = self.get_conn()
 
         elements = self.read_lineTerminalsByNodeID(conn, bus)
@@ -392,7 +377,9 @@ class ReadTransformers:
                 )[0]
                 self.totalTwoWinding = self.totalTwoWinding + 1
                 ReadTransformers.parse_twoWindingTransformer(
-                    self, twoWinding, model,
+                    self,
+                    twoWinding,
+                    model,
                 )
 
             except:

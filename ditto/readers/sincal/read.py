@@ -1,11 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import datetime
 import logging
 import threading
 import time
 from abc import ABC
-from builtins import super
 from sqlite3 import Error
 
 import sqlalchemy as sa
@@ -13,11 +10,9 @@ from sqlalchemy import text, create_engine, inspection, Inspector
 
 from ..abstract_lv_reader import AbstractLVReader
 
-logger = logging.getLogger(__name__)
-
 from .read_lines import ReadLines
 
-from .read_lines_v2 import ReadLines_V2
+from .read_lines_v2 import ReadLinesAndMerge
 from .read_loads import ReadLoads
 from .read_nodes import ReadNodes
 from .read_sources import ReadSources
@@ -26,51 +21,64 @@ from .read_capacitors import ReadCapacitors
 from .read_reactors import ReadReactors
 from .read_photovoltaics import ReadPhotovoltaics
 
+logger = logging.getLogger(__name__)
+
 
 class Reader(AbstractLVReader, ABC):
-    """ Basic Reader for the Sincal format
-    Example CLI usage:
+    """
+    Basic Reader for the Sincal format.
+    Currently, only Sincal's SQLite and MS Access (Windows only) databases are supported for data storage, but it shouldn't be hard to adapt this parser to other databases with an SQLAlchemy driver.
 
+    Example Commnad Line usage:
         ditto-cli convert --from="sincal" --to="opendss" --input="path/to/database.[mdb|db]" --output="./"
 
+    Example programmatic usage:
+    >>> db_file = 'path/to/database.[mdb|db]'
+    >>> store = Store()
+    >>> reader = Reader(input_file=db_file, separate=True, filter="lv", merge=True, transformer=True)
+    >>> models: list = reader.parse(store, single_threaded=True, show_progress=True) # multiple models are returned if `separate=True`
+
+
     """
-    format_name = 'sincal'
+
+    format_name = "sincal"
     conn = None
 
     def get_conn(self):
         """
         Lazily creates a database connection to `self.input_file`
-        TODO use a connection pool and read tables in parallel
+        TODO use a connection pool and read tables in parallel?
         """
         if self.conn is None:
             self.conn = self._create_connection(self.input_file)
         return self.conn
 
     def _create_connection(self, db_file: str) -> sa.engine.Engine:
-        """ create a database connection to the SQLite database specified by the db_file
+        """create a database connection to the SQLite database specified by the db_file
         :param db_file: database file - can be an sqllite (.db) file or an MS Access (.mdb) file
         :return: Connection object or None
         """
         engine = None
-        if str(db_file).endswith('.db'):
-            """ SQLLite database """
+        if str(db_file).endswith(".db"):
+            """SQLLite database"""
 
             try:
-                engine = create_engine(f'sqlite:///{db_file}', echo=False)
-            except Error as e:
-                self.logger.debug(f'Error creating sqlite connection to {db_file}', exc_info=1)
+                engine = create_engine(f"sqlite:///{db_file}", echo=False)
+            except Error:
+                self.logger.debug(
+                    f"Error creating sqlite connection to {db_file}", exc_info=1
+                )
 
-        elif str(db_file).endswith('.mdb'):
-            """ MS Access database """
+        elif str(db_file).endswith(".mdb"):
+            """MS Access database"""
 
             connection_string = (
                 r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-                fr"DBQ={db_file.resolve()};"
+                rf"DBQ={db_file.resolve()};"
                 r"ExtendedAnsiSQL=1;"
             )
             connection_url = sa.engine.URL.create(
-                "access+pyodbc",
-                query={"odbc_connect": connection_string}
+                "access+pyodbc", query={"odbc_connect": connection_string}
             )
             engine = sa.create_engine(connection_url)
 
@@ -86,16 +94,22 @@ class Reader(AbstractLVReader, ABC):
         return cols
 
     def read_lineTerminals(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_lineTerminalsByNodeID(self, conn, node_ID):
-        return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
+        return self.query(
+            conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID}
+        )
 
     def read_lineTerminalsByElementID(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_lineNode(self, conn, node_ID):
-        self.logger.debug(f'Reading line node {node_ID}')
+        self.logger.debug(f"Reading line node {node_ID}")
         return self.query(conn, "SELECT * FROM Node WHERE Node_ID=:id", {"id": node_ID})
 
     def read_elements(self, conn):
@@ -105,7 +119,9 @@ class Reader(AbstractLVReader, ABC):
         return self.query(conn, "SELECT * FROM Element WHERE Type=Line")
 
     def read_element(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Element WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Element WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_element_column_names(self, conn):
         return self.table_column_names(conn, "Element")
@@ -123,10 +139,14 @@ class Reader(AbstractLVReader, ABC):
         return self.query(conn, "SELECT * FROM Line")
 
     def read_line(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Line WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Line WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_breaker(self, conn, terminal_ID):
-        return self.query(conn, "SELECT * FROM Breaker WHERE Terminal_ID=:id", {"id": terminal_ID})
+        return self.query(
+            conn, "SELECT * FROM Breaker WHERE Terminal_ID=:id", {"id": terminal_ID}
+        )
 
     def read_voltageLevel_column_names(self, conn):
         return self.table_column_names(conn, "VoltageLevel")
@@ -141,7 +161,9 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "Node")
 
     def read_graphicNode(self, conn, node_ID):
-        return self.query(conn, "SELECT * FROM GraphicNode WHERE Node_ID=:id", {"id": node_ID})
+        return self.query(
+            conn, "SELECT * FROM GraphicNode WHERE Node_ID=:id", {"id": node_ID}
+        )
 
     def read_loads(self, conn):
         return self.query(conn, "SELECT * FROM Load")
@@ -150,7 +172,9 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "Load")
 
     def read_load_Element_ID(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Load WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Load WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_calcParameter(self, conn):
         return self.query(conn, "SELECT * FROM CalcParameter")
@@ -159,25 +183,37 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "CalcParameter")
 
     def read_infeederSource(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Infeeder WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Infeeder WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_voltageLevel(self, conn, voltLevel_ID):
-        return self.query(conn, "SELECT * FROM VoltageLevel WHERE VoltLevel_ID=:id", {"id": voltLevel_ID})
+        return self.query(
+            conn,
+            "SELECT * FROM VoltageLevel WHERE VoltLevel_ID=:id",
+            {"id": voltLevel_ID},
+        )
 
     def read_voltageLevels(self, conn):
         return self.query(conn, "SELECT * FROM VoltageLevel")
 
     def read_terminal(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM Terminal WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_terminal_nodeID(self, conn, node_ID):
-        return self.query(conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID})
+        return self.query(
+            conn, "SELECT * FROM Terminal WHERE Node_ID=:id", {"id": node_ID}
+        )
 
     def read_infeeders(self, conn):
         return self.query(conn, "SELECT * FROM Infeeder")
 
     def read_manipulation(self, conn, mpl_ID):
-        return self.query(conn, "SELECT * FROM Manipulation WHERE Mpl_ID=:id", {"id": mpl_ID})
+        return self.query(
+            conn, "SELECT * FROM Manipulation WHERE Mpl_ID=:id", {"id": mpl_ID}
+        )
 
     def read_manipulation_column_names(self, conn):
         return self.table_column_names(conn, "Manipulation")
@@ -189,7 +225,11 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "SynchronousMachine")
 
     def read_twoWindingTransformer(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM TwoWindingTransformer WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn,
+            "SELECT * FROM TwoWindingTransformer WHERE Element_ID=:id",
+            {"id": element_ID},
+        )
 
     def read_twoWindingTransformers(self, conn):
         return self.query(conn, "SELECT * FROM TwoWindingTransformer")
@@ -198,31 +238,49 @@ class Reader(AbstractLVReader, ABC):
         return self.table_column_names(conn, "TwoWindingTransformer")
 
     def read_threeWindingTransformer(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM ThreeWindingTransformer WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn,
+            "SELECT * FROM ThreeWindingTransformer WHERE Element_ID=:id",
+            {"id": element_ID},
+        )
 
     def read_serialCondensator(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM SerialCondensator WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn,
+            "SELECT * FROM SerialCondensator WHERE Element_ID=:id",
+            {"id": element_ID},
+        )
 
     def read_shuntCondensators(self, conn):
         return self.query(conn, "SELECT * FROM ShuntCondensator")
 
     def read_shuntCondensator(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM ShuntCondensator WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn,
+            "SELECT * FROM ShuntCondensator WHERE Element_ID=:id",
+            {"id": element_ID},
+        )
 
     def read_shuntCondensator_column_names(self, conn):
         return self.table_column_names(conn, "ShuntCondensator")
 
     def read_serialReactor(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM SerialReactor WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM SerialReactor WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_shuntReactor(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM ShuntReactor WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM ShuntReactor WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_dcInfeeder(self, conn):
         return self.query(conn, "SELECT * FROM DCInfeeder")
 
     def read_dcInfeeder_Element_ID(self, conn, element_ID):
-        return self.query(conn, "SELECT * FROM DCInfeeder WHERE Element_ID=:id", {"id": element_ID})
+        return self.query(
+            conn, "SELECT * FROM DCInfeeder WHERE Element_ID=:id", {"id": element_ID}
+        )
 
     def read_dcInfeeder_column_names(self, conn):
         return self.table_column_names(conn, "DCInfeeder")
@@ -557,16 +615,14 @@ class Reader(AbstractLVReader, ABC):
 
         return connection
 
-    def thread_function(self, name):
-        self.logger.info(f"Thread {__name__} %s: starting")
-        time.sleep(2)
-        self.logger.info(f"Thread {__name__} %s: finishing")
-
     def get_lv_transformers(self, model):
-        self.logger.info(f'Reading LV Transformers.  Separating LV Networks: {self.separate}, Voltage Filter: {self.filter}')
+        self.logger.info(
+            f"Reading LV Transformers.  Separating LV Networks: {self.separate}, Voltage Filter: {self.filter}"
+        )
         self.filter = "LV"
         ReadTransformers.parse_transformers(
-            self, model,
+            self,
+            model,
         )
 
     def get_LV_Transformer(self, model, bus):
@@ -583,9 +639,9 @@ class Reader(AbstractLVReader, ABC):
         self.usedLines = {}
         self.usedBuses[bus] = bus
         nextBus = ReadLines.parse_LV_Lines(self, model, bus)
-        self.logger.debug(f'Reading LV Lines for bus {nextBus}')
+        self.logger.debug(f"Reading LV Lines for bus {nextBus}")
         for Bus in nextBus:
-            if not Bus in self.usedBuses.keys():
+            if Bus not in self.usedBuses.keys():
                 self.usedBuses[Bus] = Bus
                 self.get_Next_LV_Lines(model, Bus)
 
@@ -595,8 +651,8 @@ class Reader(AbstractLVReader, ABC):
         self.get_lv_node(model, bus)
         nextBus = ReadLines.parse_LV_Lines(self, model, bus)
         for Bus in nextBus:
-            if not Bus in self.usedBuses:
-                self.logger.debug(f'Bus {Bus} is non trivial')
+            if Bus not in self.usedBuses:
+                self.logger.debug(f"Bus {Bus} is non trivial")
                 self.usedBuses[Bus] = Bus
                 self.get_Next_LV_Lines(model, Bus)
 
@@ -605,35 +661,47 @@ class Reader(AbstractLVReader, ABC):
 
     def read_multi_threaded(self, model, show_progress):
         threads = list()
-        if self.merge == False:
-            x = threading.Thread(target=ReadLines.parse_lines, args=(self, model, show_progress))
+        if self.merge is False:
+            x = threading.Thread(
+                target=ReadLines.parse_lines, args=(self, model, show_progress)
+            )
             threads.append(x)
             x.start()
         else:
-            x = threading.Thread(target=ReadLines_V2.parse_lines, args=(self, model, show_progress))
+            x = threading.Thread(
+                target=ReadLinesAndMerge.parse_lines, args=(self, model, show_progress)
+            )
             threads.append(x)
             x.start()
 
-        x = threading.Thread(target=ReadLoads.parse_loads, args=(self, model, show_progress))
-        threads.append(x)
-        x.start()
-
-        x = threading.Thread(target=ReadNodes.parse_nodes, args=(self, model, show_progress))
-        threads.append(x)
-        x.start()
-
-        x = threading.Thread(target=ReadSources.parse_sources, args=(self, model, show_progress))
-        threads.append(x)
-        x.start()
-
         x = threading.Thread(
-            target=ReadTransformers.parse_transformers, args=(self, model, show_progress)
+            target=ReadLoads.parse_loads, args=(self, model, show_progress)
         )
         threads.append(x)
         x.start()
 
         x = threading.Thread(
-            target=ReadPhotovoltaics.parse_photovoltaics, args=(self, model, show_progress)
+            target=ReadNodes.parse_nodes, args=(self, model, show_progress)
+        )
+        threads.append(x)
+        x.start()
+
+        x = threading.Thread(
+            target=ReadSources.parse_sources, args=(self, model, show_progress)
+        )
+        threads.append(x)
+        x.start()
+
+        x = threading.Thread(
+            target=ReadTransformers.parse_transformers,
+            args=(self, model, show_progress),
+        )
+        threads.append(x)
+        x.start()
+
+        x = threading.Thread(
+            target=ReadPhotovoltaics.parse_photovoltaics,
+            args=(self, model, show_progress),
         )
         threads.append(x)
         x.start()
@@ -644,7 +712,9 @@ class Reader(AbstractLVReader, ABC):
         threads.append(x)
         x.start()
 
-        x = threading.Thread(target=ReadReactors.parse_reactors, args=(self, model, show_progress))
+        x = threading.Thread(
+            target=ReadReactors.parse_reactors, args=(self, model, show_progress)
+        )
         threads.append(x)
         x.start()
 
@@ -656,23 +726,23 @@ class Reader(AbstractLVReader, ABC):
         return model
 
     def read_sequential(self, model, show_progress):
-        if hasattr(self, 'separate') and self.separate:
+        if hasattr(self, "separate") and self.separate:
             return self.parse_lv_networks(model, show_progress)
         else:
             return self.parse_whole_network(model, show_progress)
 
     def parse_whole_network(self, model, show_progress) -> list:
-        '''
+        """
         Parses the whole network as a single model
         @param model:
         @param show_progress:
         @return: a singletone list containing the network model Store
-        '''
+        """
 
-        if self.merge == False:
+        if self.merge is False:
             ReadLines.parse_lines(self, model, show_progress)
         else:
-            ReadLines_V2.parse_lines(self, model, show_progress)
+            ReadLinesAndMerge.parse_lines(self, model, show_progress)
 
         ReadLoads.parse_loads(self, model, show_progress)
         ReadNodes.parse_nodes(self, model, show_progress)
@@ -684,12 +754,12 @@ class Reader(AbstractLVReader, ABC):
         return [model]
 
     def parse(self, model, **kwargs):
-        '''
+        """
         Parses the model without any network splitting.
         @param model:
         @param kwargs:
         @return: a single model with all parsed network elements, or a list of sub-models if separate=True was specified in kwargs.
-        '''
+        """
 
         startTime = time.time()
         if "verbose" in kwargs and isinstance(kwargs["verbose"], bool):
@@ -697,40 +767,40 @@ class Reader(AbstractLVReader, ABC):
         else:
             self.verbose = False
 
-        self.show_progress = False if kwargs.get('show_progress') is None else kwargs.get('show_progress')
+        self.show_progress = (
+            False
+            if kwargs.get("show_progress") is None
+            else kwargs.get("show_progress")
+        )
 
-        ''' Enable single threading for debug purposes.  Multi-threaded by default.'''
+        """ Enable single threading for debug purposes.  Multi-threaded by default."""
         # if "single_threaded" in kwargs and kwargs['single_threaded'] == True:
         models_or_models = self.read_sequential(model, self.show_progress)
         # else:
         #     self.read_multi_threaded(model,  self.show_progress) # About 5x speedup, not sure of accuracy though
 
         # Call parse method of abstract reader
-        super(Reader, self).parse(model, **kwargs)
+        super().parse(model, **kwargs)
         self.logger.debug(
             "Total Read Time: %s", datetime.timedelta(seconds=(time.time() - startTime))
         )
         return models_or_models
 
     def __init__(self, **kwargs):
-        '''
+        """
         Initialises the Sincal file reader
         :param input_file: the full path to database.db -an sqllite database file containing Sincal data.
         :param filter: (or -filter from cmdline) can be set to ‘LV’ or ‘MV’, results in the extraction of only some parts of the network when also using -separate.
         This parameter can take a value LV (low voltage) or MV (high voltage) and determines whether you are allowing through only the
         low voltage and below part of the network, or only the medium voltage and above part of the network.
-        :param transformer: (-transformer): a Boolean, determines, whether the transformers that connect the MV and LV sides of the network are included in the -filtered and -separated results or not.
-        :param separate: (-separate): splits the file into separate LV networks by selecting every node/wire on the LV side of each transformer (greedily, but avoiding overlaps). TODO: Somehow
-        takes breaker states into account also.
-        :param merge: (-merge): Determines whether contiguous Lines with similar properties are merged into a single longer line.
-        '''
+        :param transformer: a Boolean, determines, whether the transformers that connect the MV and LV sides of the network are included in the -filtered and -separated results or not.
+        :param separate: splits the file into separate LV networks by selecting every node/wire on the LV side of each transformer (greedily, but avoiding overlaps). Takes breaker states into account.
+        :param merge: Determines whether contiguous Lines with similar properties are merged into a single longer line.
+        """
         self.logger = logging.getLogger(__name__)
         self.input_file = kwargs.get("input_file", "./database.db")
         self.filter = kwargs.get("filter")
         self.transformer = kwargs.get("transformer")
         self.merge = kwargs.get("merge")
         self.separate = kwargs.get("separate")
-        super(Reader, self).__init__(**kwargs)
-
-# if __name__ == '__main__':
-#    reader = Reader()
+        super().__init__(**kwargs)

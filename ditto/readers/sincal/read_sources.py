@@ -1,38 +1,9 @@
-from __future__ import absolute_import, division, print_function
-from builtins import super, range, zip, round, map
 import logging
-import math
-import sys
-import os
-import json
-import cmath
-import sqlite3
-from sqlite3 import Error
-import math
-import numpy as np
-import threading
+
+from ditto.models.power_source import PowerSource
+from ditto.readers.sincal.exception_logger import log_exceptions
 
 logger = logging.getLogger(__name__)
-
-from ditto.readers.abstract_reader import AbstractReader
-from ditto.store import Store
-from ditto.models.node import Node
-from ditto.models.line import Line
-from ditto.models.load import Load
-from ditto.models.phase_load import PhaseLoad
-from ditto.models.position import Position
-from ditto.models.power_source import PowerSource
-from ditto.models.powertransformer import PowerTransformer
-from ditto.models.winding import Winding
-from ditto.models.phase_winding import PhaseWinding
-from ditto.models.regulator import Regulator
-from ditto.models.wire import Wire
-from ditto.models.capacitor import Capacitor
-from ditto.models.phase_capacitor import PhaseCapacitor
-from ditto.models.reactor import Reactor
-from ditto.models.phase_reactor import PhaseReactor
-from ditto.models.photovoltaic import Photovoltaic
-from ditto.readers.sincal.exception_logger import log_exceptions
 
 
 class ReadSources:
@@ -42,7 +13,6 @@ class ReadSources:
     def parse_sources(self, model, show_progress=True):
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
         conn = self.get_conn()
 
         Infeeders = self.read_infeeders(conn)
@@ -83,22 +53,27 @@ class ReadSources:
                 self.voltageLevelUn = idx
 
         synchronousMachines = self.read_synchronousMachines(conn)
-        synchronousMachineColumnNames = self.read_synchronousMachines_column_names(
-            conn
-        )
+        synchronousMachineColumnNames = self.read_synchronousMachines_column_names(conn)
         for idx, name in enumerate(synchronousMachineColumnNames):
             if name["name"] == "Flag_Variant":
                 self.synchronousMachineFlagVariant = idx
 
         from tqdm import tqdm
+
         self.totalSynchronousMachines = 0
 
-        for synchronousMachine in tqdm(synchronousMachines, desc='Reading synchronous machines', disable=not self.show_progress):
+        for synchronousMachine in tqdm(
+            synchronousMachines,
+            desc="Reading synchronous machines",
+            disable=not self.show_progress,
+        ):
             self.totalSynchronousMachines = self.totalSynchronousMachines + 1
             ReadSources.parse_synchronousMachine(self, synchronousMachine, model)
 
         self.totalInfeeders = 0
-        for infeeder in tqdm(Infeeders, desc='Reading infeeders', disable=not self.show_progress):
+        for infeeder in tqdm(
+            Infeeders, desc="Reading infeeders", disable=not self.show_progress
+        ):
             self.totalInfeeders = self.totalInfeeders + 1
             ReadSources.parse_infeeders(self, infeeder, model)
 
@@ -108,8 +83,9 @@ class ReadSources:
     @log_exceptions
     def parse_synchronousMachine(self, synchronousMachine, model):
         current = self.totalSynchronousMachines
-        self.logger.debug(f"Thread {__name__} starting %s", self.totalSynchronousMachines)
-        database = self.input_file
+        self.logger.debug(
+            f"Thread {__name__} starting %s", self.totalSynchronousMachines
+        )
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -118,9 +94,7 @@ class ReadSources:
             voltageLevel = 1
 
         if synchronousMachine[self.synchronousMachineFlagVariant] == 1:
-            element = self.read_element(conn, synchronousMachine[self.infeederID])[
-                0
-            ]
+            element = self.read_element(conn, synchronousMachine[self.infeederID])[0]
             if element[self.elementFlagState] == 1:
                 voltLevel = self.read_voltageLevel(
                     conn, element[self.elementVoltLevel]
@@ -129,10 +103,8 @@ class ReadSources:
                     terminal = self.read_terminal(conn, element[self.infeederID])[0]
                     source = PowerSource(model)
                     source.name = str(element[self.elementName])
-                    self.logger.debug('Source name: ' + source.name)
-                    source.nominal_voltage = (
-                        voltLevel[self.voltageLevelUn] * 10 ** 3
-                    )
+                    self.logger.debug("Source name: " + source.name)
+                    source.nominal_voltage = voltLevel[self.voltageLevelUn] * 10**3
                     source.connecting_element = str(terminal[self.terminalID])
                     phases = terminal[self.terminalPhase]
                     source.is_sourcebus = True
@@ -164,7 +136,6 @@ class ReadSources:
     def parse_infeeders(self, infeeder, model):
         current = self.totalInfeeders
         self.logger.debug(f"Thread {__name__} starting %s", self.totalInfeeders)
-        database = self.input_file
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -182,10 +153,10 @@ class ReadSources:
                 if voltLevel[self.voltageLevelUn] < voltageLevel:
                     terminal = self.read_terminal(conn, element[self.infeederID])[0]
                     source.name = str(element[self.elementName])
-                    self.logger.debug('Source name: ' + source.name)
+                    self.logger.debug("Source name: " + source.name)
                     # Set the nominal voltage
                     source.nominal_voltage = (
-                        voltLevel[self.voltageLevelUn] * 10 ** 3
+                        voltLevel[self.voltageLevelUn] * 10**3
                     )  # DiTTo in volts
                     # Set the phases
                     phases = terminal[self.terminalPhase]
@@ -226,10 +197,10 @@ class ReadSources:
                 source.name = "sourcebus_" + str(
                     round(voltlevel[self.voltageLevelUn] * 1000)
                 )
-                self.logger.debug('Source name: ' + source.name)
+                self.logger.debug("Source name: " + source.name)
                 # Set the nominal voltage
                 source.nominal_voltage = (
-                    voltlevel[self.voltageLevelUn] * 10 ** 3
+                    voltlevel[self.voltageLevelUn] * 10**3
                 )  # DiTTo in volts
                 # Set the phases
                 source.phases.append("A")
@@ -247,7 +218,6 @@ class ReadSources:
         self.logger.debug(f"Thread {__name__} finishing %s", current)
 
     def set_infeeders(self, model):
-        database = self.input_file
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -266,10 +236,8 @@ class ReadSources:
                     source.name = "sourcebus_" + str(
                         round(voltlevel[self.voltageLevelUn] * 1000)
                     )
-                    self.logger.debug('Source Name: ' + source.name)
-                    source.nominal_voltage = (
-                        voltlevel[self.voltageLevelUn] * 10 ** 3
-                    )
+                    self.logger.debug("Source Name: " + source.name)
+                    source.nominal_voltage = voltlevel[self.voltageLevelUn] * 10**3
                     source.phases.append("A")
                     source.phases.append("B")
                     source.phases.append("C")
@@ -287,10 +255,8 @@ class ReadSources:
                     source.name = "sourcebus_" + str(
                         round(voltlevel[self.voltageLevelUn] * 1000)
                     )
-                    self.logger.debug('Source Name: ' + source.name)
-                    source.nominal_voltage = (
-                        voltlevel[self.voltageLevelUn] * 10 ** 3
-                    )
+                    self.logger.debug("Source Name: " + source.name)
+                    source.nominal_voltage = voltlevel[self.voltageLevelUn] * 10**3
                     source.phases.append("A")
                     source.phases.append("B")
                     source.phases.append("C")

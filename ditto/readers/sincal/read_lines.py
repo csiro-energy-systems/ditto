@@ -1,38 +1,13 @@
-from __future__ import absolute_import, division, print_function
-from builtins import super, range, zip, round, map
 import logging
 import math
-import sys
-import os
-import json
-import cmath
-import sqlite3
-from sqlite3 import Error
-import math
-import numpy as np
-import threading
-from tqdm import tqdm
-logger = logging.getLogger(__name__)
 
-from ditto.readers.abstract_reader import AbstractReader
-from ditto.store import Store
-from ditto.models.node import Node
+from tqdm import tqdm
+
 from ditto.models.line import Line
-from ditto.models.load import Load
-from ditto.models.phase_load import PhaseLoad
-from ditto.models.position import Position
-from ditto.models.power_source import PowerSource
-from ditto.models.powertransformer import PowerTransformer
-from ditto.models.winding import Winding
-from ditto.models.phase_winding import PhaseWinding
-from ditto.models.regulator import Regulator
 from ditto.models.wire import Wire
-from ditto.models.capacitor import Capacitor
-from ditto.models.phase_capacitor import PhaseCapacitor
-from ditto.models.reactor import Reactor
-from ditto.models.phase_reactor import PhaseReactor
-from ditto.models.photovoltaic import Photovoltaic
 from ditto.readers.sincal.exception_logger import log_exceptions
+
+logger = logging.getLogger(__name__)
 
 
 class ReadLines:
@@ -42,8 +17,8 @@ class ReadLines:
     def parse_lines(self, model, show_progress=True):
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
 
+        # TODO this should be equivalent to abstract_lv_reader.get_impedance_from_matrix().  Confirm and replace this?
         self.a = complex(
             math.cos(120 * (math.pi / 180)), math.sin(120 * (math.pi / 180))
         )
@@ -58,10 +33,7 @@ class ReadLines:
 
         # create a database connection
         conn = self.get_conn()
-        # self.logger.debug(conn)
-        # self.logger.debug("START PARSING LINES")
 
-        # self.logger.debug("Successfully Connected")
         # Elements = self.read_elementLines(conn)
         Lines = self.read_lines(conn)
         elementColumnNames = self.read_element_column_names(conn)
@@ -137,9 +109,13 @@ class ReadLines:
 
         self.totalLines = 0
 
-        for row in tqdm(Lines, desc='Reading lines', disable=not self.show_progress):
+        for row in tqdm(Lines, desc="Reading lines", disable=not self.show_progress):
             self.totalLines = self.totalLines + 1
-            ReadLines.parse_line(self, row, model,)
+            ReadLines.parse_line(
+                self,
+                row,
+                model,
+            )
 
         self.logger.debug(f"Thread {__name__} finishing")
 
@@ -148,7 +124,6 @@ class ReadLines:
         current = self.totalLines
         self.logger.info(f"Thread {__name__} starting")
         # create a database connection
-        database = self.input_file
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -156,12 +131,9 @@ class ReadLines:
         elif self.filter == "LV":
             voltageLevel = 1
 
-
         if row[self.lineFlagVariant] == 1:
             element = self.read_element(conn, row[self.lineID])[0]
-            voltLevel = self.read_voltageLevel(
-                conn, element[self.elementVoltLevel]
-            )[0]
+            voltLevel = self.read_voltageLevel(conn, element[self.elementVoltLevel])[0]
             if voltLevel[self.voltageLevelUn] < voltageLevel:
                 line = Line(model)
                 Terminals = self.read_lineTerminals(conn, row[self.lineID])
@@ -181,7 +153,7 @@ class ReadLines:
                                 )
                                 if len(transformers) > 0:
                                     key = True
-                            if key == True:
+                            if key is True:
                                 line.from_element = "sourcebus_" + str(
                                     round(voltLevel[self.voltageLevelUn] * 1000)
                                 )
@@ -203,7 +175,7 @@ class ReadLines:
                                 )
                                 if len(transformers) > 0:
                                     key = True
-                            if key == True:
+                            if key is True:
                                 line.to_element = "sourcebus_" + str(
                                     round(voltLevel[self.voltageLevelUn] * 1000)
                                 )
@@ -218,10 +190,8 @@ class ReadLines:
                         + "_"
                         + str(line.from_element)
                     )
-                    logger.debug(f'Parsed line: {line.name}: {row}')
-                    Breaker = self.read_breaker(
-                        conn, terminal[self.terminalIDNumber]
-                    )
+                    logger.debug(f"Parsed line: {line.name}: {row}")
+                    Breaker = self.read_breaker(conn, terminal[self.terminalIDNumber])
                     if len(Breaker) > 0:
                         if Breaker[0][self.breakerFlagVariant] == 1:
                             Node_ID = terminal[self.terminalID]
@@ -232,7 +202,9 @@ class ReadLines:
                             if len(BreakerTerminals) > 1:
                                 line.is_switch = 1
                                 line.is_enabled = Breaker[0][self.breakerState]
-                                '''switch = Line(model)
+
+                                # TODO work out why this is commented out.  Remove if not needed.
+                                """switch = Line(model)
                                 switch.name = (
                                     str(Node_ID)
                                     + "_"
@@ -364,14 +336,13 @@ class ReadLines:
                                 switch.C0 = 0.00001
                                 switch.C1 = 0.00001
 
-                            '''
+                            """
 
                     else:
                         Nodes = self.read_lineTerminalsByNodeID(
                             conn, terminal[self.terminalID]
                         )
                         i = 0
-                        j = 0
                         for Node in Nodes:
                             i = i + 1
                             Breaker = self.read_breaker(
@@ -380,7 +351,9 @@ class ReadLines:
                             if len(Breaker) > 0:
                                 if Breaker[0][self.breakerFlagVariant] == 1:
                                     if terminal[self.terminalNo] == 1:
-                                        line.from_element = str(terminal[self.terminalID])
+                                        line.from_element = str(
+                                            terminal[self.terminalID]
+                                        )
                                     elif terminal[self.terminalNo] == 2:
                                         line.to_element = str(terminal[self.terminalID])
 
@@ -393,12 +366,13 @@ class ReadLines:
                 elif row[self.lineType] == 3:
                     line.line_type = "connector"
 
-                ### Line Phases##################
-                #
-                # Phases are given as a string "L1 L2 L3 N"
-                # Convert this string to a list of characters
-                #
-                # phases = terminal[8]
+                """
+                Line Phases
+
+                Phases are given as a string "L1 L2 L3 N"
+                Convert this string to a list of characters
+                """
+
                 phases = terminal[self.terminalFlagTerminal]
 
                 sectionPhases = list()
@@ -426,7 +400,6 @@ class ReadLines:
                     sectionPhases.append("N")
 
                 for phase in sectionPhases:
-
                     # Create a Wire DiTTo object
                     wire = Wire(model)
 
@@ -444,17 +417,17 @@ class ReadLines:
                         )
                     except:
                         self.logger.debug("Null cross section area parameter - q")
-                        wire.gmr = float('nan')
+                        wire.gmr = float("nan")
                     wire.diameter = wire.gmr * 2
                     # Set the resistance of the conductor
                     # Represented in Ohms per meter
                     wire.resistance = (row[self.lineR1] / 1000) * line.length
                     line.wires.append(wire)
 
-                r0 = row[self.lineR0] / 1000
-                r1 = row[self.lineR1] / 1000
-                x0 = row[self.lineX0] / 1000
-                x1 = row[self.lineX1] / 1000
+                row[self.lineR0] / 1000
+                row[self.lineR1] / 1000
+                row[self.lineX0] / 1000
+                row[self.lineX1] / 1000
                 line.R0 = row[self.lineR0]
                 line.R1 = row[self.lineR1]
                 line.X0 = row[self.lineX0]
@@ -491,7 +464,6 @@ class ReadLines:
 
     def parse_LV_Lines(self, model, bus):
         self.logger.info(f"Thread {__name__} starting")
-        database = self.input_file
         self.key = False
         self.bus = bus
         self.buses = []
@@ -572,13 +544,12 @@ class ReadLines:
                 self.voltageLevelUn = idx
 
         self.totalLines = 0
-        threads = list()
 
         for element in elements:
             try:
-                if not element[self.terminalElementID] in self.usedLines:
+                if element[self.terminalElementID] not in self.usedLines:
                     row = self.read_line(conn, element[self.terminalElementID])
-                    if len(row)>0:
+                    if len(row) > 0:
                         row = row[0]
                         self.totalLines = self.totalLines + 1
                         ReadLines.parse_line(self, row, model)

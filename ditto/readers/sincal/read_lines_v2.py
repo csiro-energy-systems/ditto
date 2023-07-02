@@ -1,53 +1,27 @@
-from __future__ import absolute_import, division, print_function
-from builtins import super, range, zip, round, map
 import logging
 import math
-import sys
-import os
-import json
-import cmath
-import sqlite3
-from sqlite3 import Error
-import math
-import numpy as np
-import threading
 
-logger = logging.getLogger(__name__)
-from concurrent.futures.thread import ThreadPoolExecutor
-from concurrent.futures import as_completed, wait
 from tqdm import tqdm
 
-from ditto.readers.abstract_reader import AbstractReader
-from ditto.store import Store
-from ditto.models.node import Node
 from ditto.models.line import Line
-from ditto.models.load import Load
-from ditto.models.phase_load import PhaseLoad
-from ditto.models.position import Position
-from ditto.models.power_source import PowerSource
-from ditto.models.powertransformer import PowerTransformer
-from ditto.models.winding import Winding
-from ditto.models.phase_winding import PhaseWinding
-from ditto.models.regulator import Regulator
 from ditto.models.wire import Wire
-from ditto.models.capacitor import Capacitor
-from ditto.models.phase_capacitor import PhaseCapacitor
-from ditto.models.reactor import Reactor
-from ditto.models.phase_reactor import PhaseReactor
-from ditto.models.photovoltaic import Photovoltaic
 from ditto.readers.sincal.exception_logger import log_exceptions
 
+logger = logging.getLogger(__name__)
 
-class ReadLines_V2:
+
+class ReadLinesAndMerge:
+    """
+    An alternate version of ReadLines that determintes whether contiguous Lines with similar properties are merged into a single longer line.
+    This is useful for models derived from GIS data where the individual poles and lines between them are modelled as separate Nodes and Lines - merging these can greatly simplify such models.
+    """
+
     logger = logging.getLogger(__name__)
 
     @log_exceptions
     def parse_lines(self, model, show_progress=True):
         self.show_progress = show_progress
         self.logger.info(f"Thread {__name__} starting")
-        database = (
-            self.input_file
-        )  # r"C:\Users\ericw\Documents\PSS Files\Sincal\Network\ExampleNetwork_files\database.db"
 
         self.a = complex(
             math.cos(120 * (math.pi / 180)), math.sin(120 * (math.pi / 180))
@@ -61,12 +35,8 @@ class ReadLines_V2:
         self.A2 = [[1, 1], [1, self.a2]]
         self.inverseA2 = [[1, 1], [1, self.a]]
 
-        # create a database connection
         conn = self.get_conn()
-        # self.logger.debug(conn)
-        # self.logger.debug("START PARSING LINES")
 
-        # self.logger.debug("Successfully Connected")
         # Elements = self.read_elementLines(conn)
         Lines = self.read_lines(conn)
         elementColumnNames = self.read_element_column_names(conn)
@@ -141,19 +111,16 @@ class ReadLines_V2:
         self.duplicateElements = {}
         self.totalLines = 0
 
-        for row in tqdm(Lines, desc='Reading V2 Lines', disable=not self.show_progress):
+        for row in tqdm(Lines, desc="Reading V2 Lines", disable=not self.show_progress):
             self.totalLines = self.totalLines + 1
-            ReadLines_V2.parse_line(self, row, model)
+            ReadLinesAndMerge.parse_line(self, row, model)
 
         self.logger.debug(f"Thread {__name__} finishing")
 
-
     @log_exceptions
     def parse_line(self, row, model):
-        current = self.totalLines
         # self.logger.info(f"Thread {__name__} starting")
         # create a database connection
-        database = self.input_file
         conn = self.get_conn()
         voltageLevel = 99999999
         if self.filter == "MV":
@@ -163,7 +130,7 @@ class ReadLines_V2:
 
         duplicate = False
         try:
-            exists = self.duplicateElements[row[self.elementID]]
+            self.duplicateElements[row[self.elementID]]
             duplicate = True
         except:
             duplicate = False
@@ -173,7 +140,7 @@ class ReadLines_V2:
             self.logger.debug(duplicate)
 
         if (
-            duplicate == False
+            duplicate is False
             and row[self.lineFlagVariant] == 1
             # and row[self.lineLength] > 0.001
         ):
@@ -187,7 +154,7 @@ class ReadLines_V2:
             ):  # and row[self.lineLength] > 0.001:
                 self.line = Line(model)
                 self.line.name = str(element[self.elementName])
-                self.logger.debug(f'Parsing line named {self.line.name}')
+                self.logger.debug(f"Parsing line named {self.line.name}")
                 self.terminals = []
 
                 self.from_name = ""
@@ -209,7 +176,9 @@ class ReadLines_V2:
                 self.duplicateElements[row[self.lineID]] = row[self.lineID]
                 if row[self.lineID] == 38262:
                     self.logger.debug("LineV2: adding duplicate -2")
-                Terminals = self.read_lineTerminalsByElementID(conn, row[self.elementID])
+                Terminals = self.read_lineTerminalsByElementID(
+                    conn, row[self.elementID]
+                )
                 terminalCount = 0
 
                 phases = Terminals[0][8]
@@ -246,9 +215,7 @@ class ReadLines_V2:
                     notLine = True
                     self.attachedLineElement = []
                     terminalCount = terminalCount + 1
-                    Breaker = self.read_breaker(
-                        conn, terminal[self.terminalIDNumber]
-                    )
+                    Breaker = self.read_breaker(conn, terminal[self.terminalIDNumber])
                     if len(Breaker) > 0:
                         if Breaker[0][self.breakerFlagVariant] == 1:
                             Node_ID = terminal[self.terminalID]
@@ -259,18 +226,17 @@ class ReadLines_V2:
                             if len(BreakerTerminals) > 1:
                                 self.line.is_switch = 1
                                 self.line.is_enabled = Breaker[0][self.breakerState]
-                                self.logger.debug(f"LineV2 breaker state: {Breaker[0][self.breakerState]}")
+                                self.logger.debug(
+                                    f"LineV2 breaker state: {Breaker[0][self.breakerState]}"
+                                )
 
                     AttachedModules = self.read_terminal_nodeID(
                         conn, terminal[self.terminalID]
                     )
-                    lines = 0
-                    elementID = ""
                     for AttachedModule in AttachedModules:
-                        elementID = AttachedModule[self.terminalElementID]
+                        AttachedModule[self.terminalElementID]
                         if (
-                            row[self.lineID]
-                            != AttachedModule[self.terminalElementID]
+                            row[self.lineID] != AttachedModule[self.terminalElementID]
                             and len(AttachedModules) == 2
                         ):
                             attachedLineElements = self.read_lineTerminals(
@@ -281,22 +247,18 @@ class ReadLines_V2:
                                     attachedLineElement[self.terminalNo]
                                     != AttachedModule[self.terminalNo]
                                 ):
-                                    self.attachedLineElement.append(
-                                        attachedLineElement
-                                    )
+                                    self.attachedLineElement.append(attachedLineElement)
                             if len(self.attachedLineElement) == 1:
                                 line = self.read_line(
                                     conn,
-                                    self.attachedLineElement[0][
-                                        self.terminalElementID
-                                    ],
+                                    self.attachedLineElement[0][self.terminalElementID],
                                 )
                                 if len(line) == 1:
                                     notLine = False
                             else:
                                 notLine = True
 
-                    if notLine == False:
+                    if notLine is False:
                         NewTerminals = self.attachedLineElement[0][self.terminalID]
 
                         nextLine = self.read_line(
@@ -309,7 +271,6 @@ class ReadLines_V2:
                             and self.line.X0 == nextLine[self.lineX0]
                             and self.line.X1 == nextLine[self.lineX1]
                         ) or row[self.lineLength] <= 0.001:
-
                             self.line.length = (
                                 self.line.length + nextLine[self.lineLength] * 1000
                             )
@@ -318,7 +279,7 @@ class ReadLines_V2:
                             ] = AttachedModule[self.terminalElementID]
                             if AttachedModule[self.terminalElementID] == 38262:
                                 self.logger.debug("LineV2: adding duplicate -1")
-                            ReadLines_V2.trace_line(
+                            ReadLinesAndMerge.trace_line(
                                 self,
                                 conn,
                                 NewTerminals,
@@ -340,7 +301,7 @@ class ReadLines_V2:
                                         )
                                         if len(transformers) > 0:
                                             key = True
-                                    if key == True:
+                                    if key is True:
                                         self.line.to_element = "sourcebus_" + str(
                                             round(
                                                 self.voltLevel[self.voltageLevelUn]
@@ -348,9 +309,13 @@ class ReadLines_V2:
                                             )
                                         )
                                     else:
-                                        self.line.to_element = str(terminal[self.terminalID])
+                                        self.line.to_element = str(
+                                            terminal[self.terminalID]
+                                        )
                                 else:
-                                    self.line.to_element = str(terminal[self.terminalID])
+                                    self.line.to_element = str(
+                                        terminal[self.terminalID]
+                                    )
                                 self.to_name = element[self.elementName]
                             else:
                                 if self.transformer == "False" and (
@@ -366,7 +331,7 @@ class ReadLines_V2:
                                         )
                                         if len(transformers) > 0:
                                             key = True
-                                    if key == True:
+                                    if key is True:
                                         self.line.from_element = "sourcebus_" + str(
                                             round(
                                                 self.voltLevel[self.voltageLevelUn]
@@ -374,9 +339,13 @@ class ReadLines_V2:
                                             )
                                         )
                                     else:
-                                        self.line.from_element = str(terminal[self.terminalID])
+                                        self.line.from_element = str(
+                                            terminal[self.terminalID]
+                                        )
                                 else:
-                                    self.line.from_element = str(terminal[self.terminalID])
+                                    self.line.from_element = str(
+                                        terminal[self.terminalID]
+                                    )
                                 self.from_name = element[self.elementName]
                     else:
                         self.terminals.append(terminal[self.terminalID])
@@ -394,15 +363,16 @@ class ReadLines_V2:
                                     )
                                     if len(transformers) > 0:
                                         key = True
-                                if key == True:
+                                if key is True:
                                     self.line.to_element = "sourcebus_" + str(
                                         round(
-                                            self.voltLevel[self.voltageLevelUn]
-                                            * 1000
+                                            self.voltLevel[self.voltageLevelUn] * 1000
                                         )
                                     )
                                 else:
-                                    self.line.to_element = str(terminal[self.terminalID])
+                                    self.line.to_element = str(
+                                        terminal[self.terminalID]
+                                    )
                             else:
                                 self.line.to_element = str(terminal[self.terminalID])
                             self.to_name = element[self.elementName]
@@ -420,15 +390,16 @@ class ReadLines_V2:
                                     )
                                     if len(transformers) > 0:
                                         key = True
-                                if key == True:
+                                if key is True:
                                     self.line.from_element = "sourcebus_" + str(
                                         round(
-                                            self.voltLevel[self.voltageLevelUn]
-                                            * 1000
+                                            self.voltLevel[self.voltageLevelUn] * 1000
                                         )
                                     )
                                 else:
-                                    self.line.from_element = str(terminal[self.terminalID])
+                                    self.line.from_element = str(
+                                        terminal[self.terminalID]
+                                    )
                             else:
                                 self.line.from_element = str(terminal[self.terminalID])
                             self.from_name = element[self.elementName]
@@ -441,15 +412,14 @@ class ReadLines_V2:
                         + "_"
                         + self.to_name.replace(" ", "")
                     )
-                self.logger.debug('Parsed Line named: ' + self.line.name)
+                self.logger.debug("Parsed Line named: " + self.line.name)
 
     def trace_line(self, conn, terminal, element, terminalCount):
         AttachedModules = self.read_terminal_nodeID(conn, terminal)
         notLine = True
-        elementID = ""
         self.attachedLineElement = []
         for AttachedModule in AttachedModules:
-            elementID = AttachedModule[self.terminalElementID]
+            AttachedModule[self.terminalElementID]
             if (
                 element != AttachedModule[self.terminalElementID]
                 and len(AttachedModules) == 2
@@ -472,7 +442,7 @@ class ReadLines_V2:
                 else:
                     notLine = True
 
-        if notLine == False:
+        if notLine is False:
             NewTerminals = self.attachedLineElement[0][self.terminalID]
             nextLine = self.read_line(
                 conn, self.attachedLineElement[0][self.terminalElementID]
@@ -487,7 +457,7 @@ class ReadLines_V2:
                 and self.line.X0 == nextLine[self.lineX0]
                 and self.line.X1 == nextLine[self.lineX1]
             ) or nextLine[self.lineLength] <= 0.001:
-                ReadLines_V2.trace_line(
+                ReadLinesAndMerge.trace_line(
                     self,
                     conn,
                     NewTerminals,
@@ -509,7 +479,7 @@ class ReadLines_V2:
                             )
                             if len(transformers) > 0:
                                 key = True
-                        if key == True:
+                        if key is True:
                             self.line.to_element = "sourcebus_" + str(
                                 round(self.voltLevel[self.voltageLevelUn] * 1000)
                             )
@@ -532,7 +502,7 @@ class ReadLines_V2:
                             )
                             if len(transformers) > 0:
                                 key = True
-                        if key == True:
+                        if key is True:
                             self.line.from_element = "sourcebus_" + str(
                                 round(self.voltLevel[self.voltageLevelUn] * 1000)
                             )
@@ -560,7 +530,7 @@ class ReadLines_V2:
                         )
                         if len(transformers) > 0:
                             key = True
-                    if key == True:
+                    if key is True:
                         self.line.to_element = "sourcebus_" + str(
                             round(self.voltLevel[self.voltageLevelUn] * 1000)
                         )
@@ -581,7 +551,7 @@ class ReadLines_V2:
                         )
                         if len(transformers) > 0:
                             key = True
-                    if key == True:
+                    if key is True:
                         self.line.from_element = "sourcebus_" + str(
                             round(self.voltLevel[self.voltageLevelUn] * 1000)
                         )
