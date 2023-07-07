@@ -1,6 +1,6 @@
 name: CI
 
-on: [push, pull_request]
+on: [push]
 
 env:
   POETRY_VERSION: 1.4.2
@@ -15,7 +15,7 @@ jobs:
           - macOS-latest
           - ubuntu-latest
           - windows-latest
-        python-version: [ '3.8','3.9', '3.10' ] # '3.7' no longer supported
+        python-version: [ '3.8','3.9','3.10' ] # '3.7' no longer supported
     steps:
 
     - uses: actions/checkout@v2
@@ -32,9 +32,14 @@ jobs:
         virtualenvs-in-project: true
 
     - name: Install dependencies
-      run: |
-        poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
-        poetry install --all-extras
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 5
+        retry_on: error
+        max_attempts: 2 # workarond for windows matrix builds occasionally failing with 'file because it is being used by another process'
+        command: |
+          poetry config installer.modern-installation false # workaround for https://github.com/python-poetry/poetry/issues/7611
+          poetry install --all-extras
 
     - name: run pytests & coverage report
       run: poetry run pytest -vvv --cov=./ --cov-report=xml:unit.coverage.xml

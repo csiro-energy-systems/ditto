@@ -493,11 +493,11 @@ class Writer(AbstractWriter):
                 if hasattr(i, "from_element") and i.from_element is not None:
                     bus1 = i.from_element
                 else:
-                    loggger.error("Missing a from_element connection in {name}".format(i.name))
+                    logger.error("Missing a from_element connection in {name}".format(i.name))
                 if hasattr(i, "to_element") and i.to_element is not None:
                     bus2 = i.to_element
                 else:
-                    loggger.error("Missing a to_element connection in {name}".format(name=i.name))
+                    logger.error("Missing a to_element connection in {name}".format(name=i.name))
 
                 buses = [bus1, bus2]
 
